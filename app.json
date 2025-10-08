@@ -1,18 +1,26 @@
 {
   "expo": {
-    "name": "Giftology Demo",
-    "slug": "giftology-demo",
+    "name": "RelationshipRadar",
+    "slug": "relationshipradar",
     "version": "1.0.0",
     "sdkVersion": "48.0.0",
     "platforms": ["ios", "android", "web"],
     "ios": {
-      "bundleIdentifier": "com.cerenimbus.relationshipradar"
+      "bundleIdentifier": "com.cerenimbus.relationshipradar",
+      "infoPlist": { "ITSAppUsesNonExemptEncryption": false }
     },
-    "android": {
-      "package": "com.cerenimbus.relationshipradar"
+    "android": { "package": "com.cerenimbus.relationshipradar" },
+    "assetBundlePatterns": ["**/*"],
+    "icon": "./assets/applogo.png",
+    "splash": {
+      "image": "./assets/applogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ]
+    "extra": {
+      "eas": {
+        "projectId": "9244bc88-d1af-4b44-a6c5-f4ceab153e64"
+      }
+    }
   }
 }
