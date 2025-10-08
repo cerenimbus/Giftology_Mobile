@@ -1,0 +1,3 @@
+// Tiny valid PNG data URI used as an inline logo to avoid bundling issues
+export const LOGO_DATA_URI =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAJElEQVR4nO3BMQEAAADCoPVPbQ0PoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA8H8GAAE1s5GRAAAAAElFTkSuQmCC';
