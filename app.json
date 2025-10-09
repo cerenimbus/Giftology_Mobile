@@ -22,5 +22,17 @@
         "projectId": "9244bc88-d1af-4b44-a6c5-f4ceab153e64"
       }
     }
+    ,
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static",
+            "enableBitcode": false
+          }
+        }
+      ]
+    ]
   }
 }
