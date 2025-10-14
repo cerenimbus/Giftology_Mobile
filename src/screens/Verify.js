@@ -1,14 +1,39 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { AuthorizeUser } from '../api';
+import { getAuthCode, removeAuthCode } from '../utils/storage';
 
 export default function Verify({ navigation }){
+  const [code, setCode] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const onSubmit = async () => {
+    if (code.length !== 6) return;
+    setLoading(true);
+    try {
+      const deviceCode = await getAuthCode();
+      const checkCode = code || deviceCode;
+      const res = await AuthorizeUser({ code: checkCode });
+      if (res?.success) {
+        navigation.replace('Main');
+      } else {
+        Alert.alert('Verification failed', res?.message || 'Unknown error', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
+        await removeAuthCode();
+      }
+    } catch (e) {
+      Alert.alert('Error', String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Verify</Text>
       <Text style={{marginTop:8}}>A security code is being texted to your phone. Enter the code below</Text>
-      <TextInput style={styles.input} placeholder="Entry field for 6 digit number" keyboardType="number-pad" />
-      <TouchableOpacity style={styles.button} onPress={() => navigation.replace('Main')}>
-        <Text style={{color:'#fff',fontWeight:'700'}}>Submit</Text>
+      <TextInput value={code} onChangeText={t => setCode(t.replace(/\D/g,'').slice(0,6))} style={styles.input} placeholder="Entry field for 6 digit number" keyboardType="number-pad" />
+      <TouchableOpacity disabled={code.length !== 6 || loading} style={[styles.button, (code.length !== 6 || loading) && {opacity:0.6}]} onPress={onSubmit}>
+        <Text style={{color:'#fff',fontWeight:'700'}}>{loading ? 'Submitting...' : 'Submit'}</Text>
       </TouchableOpacity>
     </View>
   )

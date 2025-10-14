@@ -1,27 +1,61 @@
-import React from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Linking } from 'react-native';
+import { AuthorizeDevice } from '../api';
+import { setAuthCode, getAuthCode } from '../utils/storage';
 
 export default function Login({ navigation }) {
+  const [email, setEmail] = useState('helloworld@gmail.com');
+  const [password, setPassword] = useState('password');
+  const [termsChecked, setTermsChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const code = await getAuthCode();
+      if (code) navigation.replace('Main');
+    })();
+  }, []);
+
+  const onSignIn = async () => {
+    if (!termsChecked) return;
+    setLoading(true);
+    try {
+      const res = await AuthorizeDevice({ email, password });
+      if (res?.success && res.authorization_code) {
+        await setAuthCode(res.authorization_code);
+        navigation.navigate('Verify');
+      } else {
+        Alert.alert('Sign in failed', 'Unable to authorize device');
+      }
+    } catch (e) {
+      Alert.alert('Error', String(e));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-  <Text style={styles.relationTitle}>Relationship Radar</Text>
-  <Text style={styles.powered}>Powered by:</Text>
-  <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-  <Text style={styles.title}>Log in</Text>
+      <Text style={styles.relationTitle}>Relationship Radar</Text>
+      <Text style={styles.powered}>Powered by:</Text>
+      <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
+      <Text style={styles.title}>Log in</Text>
 
       <Text style={styles.label}>Email address</Text>
-      <TextInput style={styles.input} placeholder="helloworld@gmail.com" defaultValue="helloworld@gmail.com" />
+      <TextInput style={styles.input} placeholder="helloworld@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
 
       <Text style={styles.label}>Password</Text>
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry defaultValue="password" />
+      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
 
       <View style={styles.row}>
-        <Text style={styles.checkbox}>☑</Text>
-        <Text style={styles.small}>Accept terms and Privacy Policy</Text>
+        <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:8}}>
+          <Text style={styles.checkbox}>{termsChecked ? '☑' : '☐'}</Text>
+        </TouchableOpacity>
+        <Text style={styles.small}>Accept <Text style={{color:'#e84b4b'}} onPress={() => Linking.openURL('https://radar.giftologygroup.com/terms.html')}>Terms</Text> and <Text style={{color:'#e84b4b'}} onPress={() => Linking.openURL('https://radar.giftologygroup.com/privacypolicy.html')}>Privacy Policy</Text></Text>
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Verify')}>
-        <Text style={styles.buttonText}>Log in</Text>
+      <TouchableOpacity disabled={!termsChecked || loading} style={[styles.button, (!termsChecked || loading) && {opacity:0.6}]} onPress={onSignIn}>
+        <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Log in'}</Text>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>

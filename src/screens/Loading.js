@@ -1,11 +1,19 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { useEffect } from 'react';
+import { getAuthCode } from '../utils/storage';
 
 export default function Loading({ navigation }){
   useEffect(() => {
-    const t = setTimeout(() => navigation.replace('Login'), 1300);
-    return () => clearTimeout(t);
+    let mounted = true;
+    (async () => {
+      // small delay to show the spinner
+      await new Promise(r => setTimeout(r, 800));
+      const code = await getAuthCode();
+      if (!mounted) return;
+      if (code) navigation.replace('Main');
+      else navigation.replace('Login');
+    })();
+    return () => (mounted = false);
   }, []);
 
   return (

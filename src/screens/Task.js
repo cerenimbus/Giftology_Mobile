@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import BarChart from '../components/BarChart';
+import { GetTaskList, UpdateTaskDone } from '../api';
 
 const TASKS = [
   { id: '1', name: 'James', note: 'Introduction', date: 'Sep 9' },
@@ -9,10 +10,41 @@ const TASKS = [
   { id: '4', name: 'Loren', note: 'DOV', date: 'Sep 26' }
 ];
 
-export default function Task(){
+export default function Task({ navigation }){
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await GetTaskList();
+      if (res?.success) setTasks(res.tasks || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const onTapTask = (task) => {
+    Alert.alert('Mark complete?', 'Are you sure you want to mark this task completed?', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Yes', onPress: async () => {
+        setLoading(true);
+        try {
+          await UpdateTaskDone(task.id);
+          await load();
+        } finally { setLoading(false); }
+      } }
+    ]);
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.page}>
       <Text style={styles.title}>Task</Text>
+      <TouchableOpacity style={{position:'absolute',left:18,top:24,padding:8}} onPress={() => navigation.goBack()}>
+        <Text style={{color:'#e84b4b'}}>Back</Text>
+      </TouchableOpacity>
 
       {/* Best Referral Partner */}
       <View style={styles.card}>
@@ -59,12 +91,13 @@ export default function Task(){
       {/* Task list card (compact like screenshot) */}
       <View style={styles.card}>
         <Text style={styles.cardTitleSmall}>Task</Text>
-        {TASKS.map(t => (
-          <View key={t.id} style={styles.taskRow}>
-            <Text style={styles.checkbox}>☐</Text>
+        {loading && <ActivityIndicator style={{marginVertical:12}} />}
+        {tasks.map(t => (
+          <TouchableOpacity key={t.id} style={styles.taskRow} activeOpacity={0.8} onPress={() => onTapTask(t)}>
+            <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
             <View style={styles.taskMain}><Text style={styles.taskName}>{t.name}</Text><Text style={styles.taskNote}>{t.note}</Text></View>
             <Text style={styles.taskDate}>{t.date}</Text>
-          </View>
+          </TouchableOpacity>
         ))}
       </View>
 
