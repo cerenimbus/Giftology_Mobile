@@ -43,7 +43,7 @@ function MainTabs() {
       })}
     >
       <Tab.Screen name="Dashboard" component={Dashboard} />
-  <Tab.Screen name="Task" component={Task} options={{ tabBarButton: () => null }} />
+      <Tab.Screen name="Task" component={Task} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Contacts" component={Contacts} />
       <Tab.Screen name="Settings" component={Dashboard} />
       <Tab.Screen name="Profile" component={Profile} />
