@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
-import { AuthorizeUser } from '../api';
+import { AuthorizeDeviceID } from '../api';
+import { log } from '../utils/debug';
 import { getAuthCode, removeAuthCode } from '../utils/storage';
 
 export default function Verify({ navigation }){
@@ -11,9 +12,10 @@ export default function Verify({ navigation }){
     if (code.length !== 6) return;
     setLoading(true);
     try {
-      const deviceCode = await getAuthCode();
-      const checkCode = code || deviceCode;
-      const res = await AuthorizeUser({ code: checkCode });
+      log('Verify: submitting code', code);
+  const res = await AuthorizeDeviceID({ SecurityCode: code });
+  log('Verify: AuthorizeDeviceID response', res);
+  if (res?.requestUrl) { try { log('Verify: AuthorizeDeviceID URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Verify: AuthorizeDeviceID URL (full):', res.requestUrl); } catch(e){} }
       if (res?.success) {
         navigation.replace('Main');
       } else {

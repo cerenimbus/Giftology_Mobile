@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const AUTH_KEY = 'authorization_code';
+const DEVICE_KEY = 'device_id';
 
 export async function setAuthCode(code) {
   try {
@@ -29,5 +30,41 @@ export async function removeAuthCode() {
   } catch (e) {
     console.warn('removeAuthCode error', e);
     return false;
+  }
+}
+
+export async function setDeviceId(id) {
+  try {
+    await AsyncStorage.setItem(DEVICE_KEY, id);
+    return true;
+  } catch (e) {
+    console.warn('setDeviceId error', e);
+    return false;
+  }
+}
+
+export async function getDeviceId() {
+  try {
+    const v = await AsyncStorage.getItem(DEVICE_KEY);
+    return v;
+  } catch (e) {
+    console.warn('getDeviceId error', e);
+    return null;
+  }
+}
+
+// Ensure a device id exists; generate a simple v4 UUID and persist it
+export async function ensureDeviceId() {
+  try {
+    let v = await AsyncStorage.getItem(DEVICE_KEY);
+    if (v) return v;
+    // generate v4 UUID
+    const s4 = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+    v = `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+    await AsyncStorage.setItem(DEVICE_KEY, v);
+    return v;
+  } catch (e) {
+    console.warn('ensureDeviceId error', e);
+    return null;
   }
 }

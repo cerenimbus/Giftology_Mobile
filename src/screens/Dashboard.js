@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing } from 'react-native';
 import { HamburgerIcon, BackIcon } from '../components/Icons';
 import { GetDashboard } from '../api';
+import { log } from '../utils/debug';
 
 export default function Dashboard({ navigation }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -23,9 +24,12 @@ export default function Dashboard({ navigation }) {
       try {
         const res = await GetDashboard();
         if (!mounted) return;
+        if (res?.requestUrl) {
+          try { log('Dashboard: GetDashboard URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Dashboard: GetDashboard URL (full):', res.requestUrl); } catch (e) {}
+        }
         if (res?.success) setData(res.data);
       } catch (e) {
-        // ignore
+        log('Dashboard: GetDashboard exception', e && e.stack ? e.stack : e);
       }
     }
     load();
@@ -72,20 +76,20 @@ export default function Dashboard({ navigation }) {
               <Text style={styles.menuText}>Dashboard</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Main'); }}>
-              <Text style={styles.menuText}>Reports</Text>
-            </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Main'); }}>
-              <Text style={styles.menuText}>Dates & DOV</Text>
-            </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Contacts'); }}>
-              <Text style={styles.menuText}>Contacts</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Task'); }}>
+              <Text style={styles.menuText}>Tasks</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Preview'); }}>
-              <Text style={styles.menuText}>Preview Screens</Text>
+              <Text style={styles.menuText}>DOV & Dates</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Contacts'); }}>
+              <Text style={styles.menuText}>Potential Partners</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Preview'); }}>
+              <Text style={styles.menuText}>Reports</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Help'); }}>

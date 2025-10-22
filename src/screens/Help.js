@@ -1,22 +1,42 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
+import { GetHelp } from '../api';
+import { log } from '../utils/debug';
 
 export default function Help({ navigation }){
+
+  const showHelp = async (topic) => {
+    try {
+      const res = await GetHelp({ topic });
+      if (res?.requestUrl) { try { log('Help: GetHelp URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Help: GetHelp URL (full):', res.requestUrl); } catch(e){} }
+      Alert.alert(topic, res?.help || 'No help content', [{ text: 'OK', onPress: () => {} }]);
+    } catch (e) {
+      Alert.alert('Error', String(e));
+    }
+  };
+
   return (
     <View style={{flex:1}}>
       <ScrollView contentContainerStyle={styles.container}>
         <Text style={{marginTop:6,color:'#666'}} onPress={() => navigation.navigate('Dashboard')}>← Back</Text>
-        <Text style={styles.title}>Help Screen</Text>
+        <Text style={styles.title}>Help</Text>
         <View style={styles.card}>
-          <Text style={styles.h2}>Lorem ipsum dolor</Text>
-          <Text style={styles.p}>Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.</Text>
+          <TouchableOpacity style={styles.helpRow} onPress={() => showHelp('Procedure')}>
+            <Text style={styles.h2}>Procedures</Text>
+            <Text style={{color:'#e84b4b'}}>View</Text>
+          </TouchableOpacity>
 
-          <Text style={[styles.h2,{marginTop:18}]}>Lorem ipsum</Text>
-          <Text style={styles.p}>Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat.</Text>
+          <TouchableOpacity style={styles.helpRow} onPress={() => showHelp('Team')}>
+            <Text style={styles.h2}>Teams</Text>
+            <Text style={{color:'#e84b4b'}}>View</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.helpRow} onPress={() => showHelp('Picture')}>
+            <Text style={styles.h2}>Picture</Text>
+            <Text style={{color:'#e84b4b'}}>View</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      {/* bottom tab is provided by navigator */}
     </View>
   )
 }
