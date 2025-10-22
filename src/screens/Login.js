@@ -1,6 +1,13 @@
+/*
+ * RHCM 10/22/25
+ * src/screens/Login.js
+ * Login screen: accepts username/password and calls AuthorizeUser.
+ * Intent comments explain the auth flow: server may return an AC (authorization
+ * code) used for device verification; if present we persist it for subsequent calls.
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Linking } from 'react-native';
-import { AuthorizeEmployee } from '../api';
+import { AuthorizeUser } from '../api';
 import { setAuthCode, getAuthCode } from '../utils/storage';
 import { log, setDebugFlag, getDebugFlag } from '../utils/debug';
 
@@ -22,15 +29,15 @@ export default function Login({ navigation }) {
     setLoading(true);
     try {
       log('Login: sign-in pressed', { email: email.replace(/(.{2}).+(@.+)/,'$1***$2'), termsChecked });
-      const res = await AuthorizeEmployee({ UserName: email, Password: password, GiftologyVersion: 1, Language: 'EN' });
+      const res = await AuthorizeUser({ UserName: email, Password: password, GiftologyVersion: 1, Language: 'EN' });
       // log the response and the request URL used
-      log('Login: AuthorizeEmployee response', res);
+      log('Login: AuthorizeUser response', res);
       if (res?.requestUrl) {
         // masked AC in URL
         try {
           const masked = res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***');
-          log('Login: AuthorizeEmployee URL (masked):', masked);
-          log('Login: AuthorizeEmployee URL (full):', res.requestUrl);
+          log('Login: AuthorizeUser URL (masked):', masked);
+          log('Login: AuthorizeUser URL (full):', res.requestUrl);
         } catch (e) {
           log('Login: error masking URL', e && e.stack ? e.stack : e);
         }

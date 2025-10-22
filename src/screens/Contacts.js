@@ -1,3 +1,7 @@
+/* RHCM 10/22/25
+ * src/screens/Contacts.js
+ * Lists potential partners retrieved from GetContactList.
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
 import { GetContactList } from '../api';

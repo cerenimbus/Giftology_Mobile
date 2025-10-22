@@ -1,3 +1,8 @@
+/* RHCM 10/22/25
+ * src/screens/Task.js
+ * Task list and simple task completion. Loads tasks with GetTaskList and
+ * calls UpdateTask to mark completion.
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import BarChart from '../components/BarChart';

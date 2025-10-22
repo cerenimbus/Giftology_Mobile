@@ -1,3 +1,7 @@
+/* RHCM 10/22/25
+ * src/screens/Forgot.js
+ * Password reset screen - validates email and calls ResetPassword.
+ */
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import { ResetPassword } from '../api';

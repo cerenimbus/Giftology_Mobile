@@ -1,3 +1,8 @@
+/* RHCM 10/22/25
+ * src/screens/Loading.js
+ * Minimal startup/loading screen. Ensures a device id exists and routes the
+ * user either to Login (no auth code) or Main (already authorized).
+ */
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
 import { getAuthCode, ensureDeviceId } from '../utils/storage';

@@ -1,3 +1,8 @@
+/* RHCM 10/22/25
+ * src/screens/Dashboard.js
+ * The main dashboard view showing summary metrics and navigation to Tasks,
+ * Contacts, Help, and Feedback. Fetches dashboard data via GetDashboard.
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing } from 'react-native';
 import { HamburgerIcon, BackIcon } from '../components/Icons';

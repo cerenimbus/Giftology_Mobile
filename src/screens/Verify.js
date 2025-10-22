@@ -1,3 +1,8 @@
+/* RHCM 10/22/25
+ * src/screens/Verify.js
+ * Verification screen where user enters a 6-digit code received via SMS.
+ * Calls AuthorizeDeviceID and routes to Main on success.
+ */
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { AuthorizeDeviceID } from '../api';

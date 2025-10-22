@@ -1,7 +1,12 @@
+/* RHCM 10/22/25
+ * src/components/BarChart.js
+ * Minimal, dependency-free bar chart using native Views. Used for small
+ * visualizations in the dashboard without pulling in native SVG libs.
+ */
 import React from 'react';
 import { View, StyleSheet } from 'react-native';
 
-// A tiny, dependency-free bar-chart that uses plain Views.
+// RHCM 10/22/25 - A tiny, dependency-free bar-chart that uses plain Views.
 // Props:
 // - data: number[] (values)
 // - height: number (px)

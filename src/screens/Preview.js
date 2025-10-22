@@ -1,3 +1,9 @@
+/* RHCM 10/22/25
+ * src/screens/Preview.js
+ * A paged preview of all screens used for visual QA and demo purposes.
+ * Renders the app screens in a horizontal FlatList and supplies a dummy
+ * navigation object for non-interactive preview pages.
+ */
 import React, { useRef, useState, useCallback } from 'react';
 import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
 import Loading from './Loading';

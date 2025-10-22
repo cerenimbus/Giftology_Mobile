@@ -1,23 +1,37 @@
+/*
+ * RHCM 10/22/25
+ * c:/src/api/index.js
+ * Giftology RRService API client
+ * Purpose: small HTTP client wrapper for calling the RRService PHP endpoints.
+ * Notes:
+ * - Builds signed requests (DeviceID, Date, Key, AC) per server spec
+ * - Parses XML responses into JS objects using fast-xml-parser
+ * - Uses shared debug utils to emit masked and full request URLs for troubleshooting
+ */
 import CryptoJS from 'crypto-js';
 import { XMLParser } from 'fast-xml-parser';
 import { getAuthCode, getDeviceId } from '../utils/storage';
-import { log, getDebugFlag } from '../utils/debug';
+import { log, getDebugFlag, logError } from '../utils/debug';
 
 const BASE = 'https://radar.Giftology.com/RRService';
 
 // Use shared debug flag from utils/debug
 // expose setters via utils/debug if needed
 
+// RHCM 10/22/25 - mask sensitive strings when printing to logs (keeps start/end chars)
 function mask(s, keep = 4) {
   if (!s) return '';
   if (s.length <= keep + 2) return '***';
   return `${s.slice(0, keep)}...${s.slice(-keep)}`;
 }
 
+// RHCM 10/22/25 - compute SHA1 hex digest for request signing
 function sha1(str) {
   return CryptoJS.SHA1(str).toString(CryptoJS.enc.Hex);
 }
 
+// RHCM 10/22/25 - build a GET URL for the named RRService function with query params
+// Avoids using URLSearchParams for Hermes compatibility in RN.
 function buildUrl(functionName, params) {
   const parts = [];
   Object.keys(params || {}).forEach((k) => {
@@ -30,6 +44,8 @@ function buildUrl(functionName, params) {
   return `${BASE}/${functionName}.php${qs}`;
 }
 
+// RHCM 10/22/25 - central caller used by all exported API functions below.
+// Returns object: { success, errorNumber, message, raw, parsed, requestUrl }
 async function callService(functionName, extraParams = {}) {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
   const deviceId = (await getDeviceId()) || '';
@@ -80,9 +96,12 @@ async function callService(functionName, extraParams = {}) {
   }
 }
 
-export async function AuthorizeEmployee(payload) {
+// RHCM 10/22/25 - Authenticate a user with username/password. Server may
+// send an authorization code (AC) via SMS as part of the flow.
+export async function AuthorizeUser(payload) {
   // payload should contain UserName, Password, DeviceType, DeviceModel, DeviceVersion, GiftologyVersion, Language, TestFlag
-  return callService('AuthorizeEmployee', payload);
+  // NOTE: server endpoint name changed to AuthorizeUser
+  return callService('AuthorizeUser', payload);
 }
 
 export async function AuthorizeDeviceID({ SecurityCode }) {

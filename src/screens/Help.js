@@ -1,3 +1,8 @@
+/* RHCM 10/22/25
+ * src/screens/Help.js
+ * Help menu - fetches help topics from the server using GetHelp and displays
+ * the returned content in an Alert for simplicity.
+ */
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
 import { GetHelp } from '../api';
