@@ -1,7 +1,13 @@
+/* RHCM 10/22/25
+ * src/screens/Task.js
+ * Task list and simple task completion. Loads tasks with GetTaskList and
+ * calls UpdateTask to mark completion.
+ */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import BarChart from '../components/BarChart';
-import { GetTaskList, UpdateTaskDone } from '../api';
+import { GetTaskList, UpdateTask } from '../api';
+import { log } from '../utils/debug';
 
 const TASKS = [
   { id: '1', name: 'James', note: 'Introduction', date: 'Sep 9' },
@@ -18,6 +24,8 @@ export default function Task({ navigation }){
     setLoading(true);
     try {
       const res = await GetTaskList();
+      log('Task: GetTaskList response', res);
+      if (res?.requestUrl) { try { log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Task: GetTaskList URL (full):', res.requestUrl); } catch(e){} }
       if (res?.success) setTasks(res.tasks || []);
     } finally {
       setLoading(false);
@@ -32,7 +40,10 @@ export default function Task({ navigation }){
       { text: 'Yes', onPress: async () => {
         setLoading(true);
         try {
-          await UpdateTaskDone(task.id);
+          log('Task: update requested', task.id);
+          const res = await UpdateTask({ Task: task.id, Status: 1 });
+          log('Task: UpdateTask response', res);
+          if (res?.requestUrl) { try { log('Task: UpdateTask URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Task: UpdateTask URL (full):', res.requestUrl); } catch(e){} }
           await load();
         } finally { setLoading(false); }
       } }

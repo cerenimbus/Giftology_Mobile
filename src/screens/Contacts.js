@@ -1,19 +1,43 @@
-import React from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
+/* RHCM 10/22/25
+ * src/screens/Contacts.js
+ * Lists potential partners retrieved from GetContactList.
+ */
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, FlatList, Alert, TouchableOpacity } from 'react-native';
+import { GetContactList } from '../api';
+import { log } from '../utils/debug';
 
-const DATA = new Array(12).fill(0).map((_,i)=>({id:String(i), name: ['Charly Oman','Jhon de rosa','Martin Mayers','kent Mayers','kerk Mayers','Allen Mayers','willma Mayers','Alexander Ace','kent Mayers','kent Mayers'][i%10], phone: '(225) 555-0118'}))
+export default function Contacts({ navigation }){
+  const [contacts, setContacts] = useState([]);
 
-export default function Contacts(){
+  const load = async () => {
+    try {
+      const res = await GetContactList();
+      if (res?.requestUrl) { try { log('Contacts: GetContactList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Contacts: GetContactList URL (full):', res.requestUrl); } catch(e){} }
+      if (res?.success) setContacts(res.contacts || []);
+    } catch (e) {
+      Alert.alert('Error', String(e));
+    }
+  };
+
+  useEffect(() => { load(); }, []);
+
   return (
     <View style={styles.container}>
+      <TouchableOpacity style={{marginTop:20,marginLeft:12}} onPress={() => navigation.navigate('Dashboard')}>
+        <Text style={{color:'#666'}}>← Back</Text>
+      </TouchableOpacity>
       <Text style={styles.title}>Contacts</Text>
       <View style={styles.table}>
-        <FlatList data={DATA} keyExtractor={i=>i.id} renderItem={({item})=> (
-          <View style={styles.row}><Text style={styles.name}>{item.name}</Text><Text style={styles.phone}>{item.phone}</Text></View>
+        <View style={[styles.row, {borderBottomWidth:1,borderColor:'#eee',paddingVertical:12}]}>
+          <Text style={[styles.name,{fontWeight:'700'}]}>Name</Text>
+          <Text style={[styles.name,{fontWeight:'700'}]}>Status</Text>
+          <Text style={[styles.name,{fontWeight:'700'}]}>Phone</Text>
+        </View>
+        <FlatList data={contacts} keyExtractor={i=>i.id} renderItem={({item})=> (
+          <View style={styles.row}><Text style={styles.name}>{item.name}</Text><Text style={styles.status}>{item.status}</Text><Text style={styles.phone}>{item.phone}</Text></View>
         )} />
       </View>
-
-      {/* tab bar moved to navigator */}
     </View>
   )
 }

@@ -1,3 +1,7 @@
+/* RHCM 10/22/25
+ * src/screens/Profile.js
+ * Minimal profile screen used as a placeholder in the demo app.
+ */
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
