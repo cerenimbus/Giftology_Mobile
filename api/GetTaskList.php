@@ -1,13 +1,20 @@
 <?php
+//***************************************************************
 // Cerenimbus Inc.
 // 1175 N 910 E, Orem UT 84097
 // THIS IS NOT OPEN SOURCE. DO NOT USE WITHOUT PERMISSION
-
-/*
-GetTaskList
-Description:
-Get a list of tasks for a User. The User is selected based on the authorization code.
-*/
+//***************************************************************
+// Copyright Cerenimbus
+// ALL RIGHTS RESERVED. Proprietary and confidential
+//***************************************************************
+//
+// File: GetTaskList.php
+// Description: Retrieves a list of tasks for a user based on the provided authorization code.
+// Called by: Modules/services requiring retrieval of all tasks for a user based on authorization code
+// Author: ALC
+// Created: 10/23/25
+// History: 10/23/25 initial version created
+//***************************************************************
 
 $debugflag = false;
 
@@ -16,7 +23,7 @@ if (isset($_REQUEST["debugflag"])) {
     $debugflag = true;
 }
 
-// this stops the java scrip from being written because this is a microservice API
+// this stops the java script from being written because this is a microservice API
 $suppress_javascript = true;
 
 //-------------------------------------

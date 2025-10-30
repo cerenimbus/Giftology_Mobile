@@ -1,7 +1,20 @@
 <?php
-// Cerenimbus Inc
+//***************************************************************
+// Cerenimbus Inc.
 // 1175 N 910 E, Orem UT 84097
 // THIS IS NOT OPEN SOURCE. DO NOT USE WITHOUT PERMISSION
+//***************************************************************
+// Copyright Cerenimbus
+// ALL RIGHTS RESERVED. Proprietary and confidential
+//***************************************************************
+//
+// File: ResetPassword.php
+// Description: Resets a user's password based on authorization code and sends a notification email.
+// Called by: Modules or services requiring a password reset for a user
+// Author: ALC
+// Created: 10/29/25
+// History: 10/29/25 initial version created
+//***************************************************************
 
 $debugflag = false;
 // RKG 10/20/25 allow the debugflag to be switched on in the get method call
@@ -9,7 +22,7 @@ if( isset($_REQUEST["debugflag"])) {
     $debugflag = true;
 }
 
-// this stops the java scrip from being written because this is a microservice API
+// this stops the java script from being written because this is a microservice API
 $suppress_javascript= true;
 
 // be sure we can find the function file for inclusion

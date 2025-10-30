@@ -1,19 +1,27 @@
 <?php
+//***************************************************************
 // Cerenimbus Inc.
 // 1175 N 910 E, Orem UT 84097
 // THIS IS NOT OPEN SOURCE. DO NOT USE WITHOUT PERMISSION
-/*
-GetTask
-Description:
-Return a single task assigned to a user, identified by the task serial number.
-*/
+//***************************************************************
+// Copyright Cerenimbus
+// ALL RIGHTS RESERVED. Proprietary and confidential
+//***************************************************************
+//
+// File: GetTask.php
+// Description: Retrieves a single task based on the provided task serial.
+// Called by: Modules or services that need to fetch a specific task for a user based on task serial
+// Author: ALC
+// Date: 10/27/25
+// History: 10/27/25 initial version created
+//***************************************************************
 
 $debugflag = false;
 // RKG 10/20/25 allow the debugflag to be switched on in the get method call
 if (isset($_REQUEST["debugflag"])) {
     $debugflag = true;
 }
-// this stops the java scrip from being written because this is a microservice API
+// this stops the java script from being written because this is a microservice API
 $suppress_javascript = true;
 
 //-------------------------------------
