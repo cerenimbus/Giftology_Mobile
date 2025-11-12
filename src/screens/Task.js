@@ -101,7 +101,9 @@ export default function Task({ navigation }) {
         <Text style={{ color: '#e84b4b' }}>Back</Text>
       </TouchableOpacity>
 
-      {/* ✅ Best Referral Partner (from GetDashboard) */}
+      {/* 
+      JA 11/12/2025
+      ✅ Best Referral Partner (from GetDashboard) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Best Referral Partner</Text>
         {bestPartners?.length ? (
@@ -121,7 +123,9 @@ export default function Task({ navigation }) {
         )}
       </View>
 
-      {/* ✅ Current Runaway Relationships (from GetDashboard) */}
+      {/* 
+      JA 11/12/2025
+      ✅ Current Runaway Relationships (from GetDashboard) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Current Runaway Relationships</Text>
         {currentRunners?.length ? (
@@ -140,8 +144,8 @@ export default function Task({ navigation }) {
           </>
         )}
       </View>
-
-      {/* ✅ Dates & DOV (using total + chart placeholder until expanded) */}
+        {/* JA 11/12/2025
+        ✅ Dates & DOV (using total + chart placeholder until expanded) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Dates & DOV</Text>
         <View style={styles.pillsRow}>
@@ -158,7 +162,10 @@ export default function Task({ navigation }) {
         </View>
       </View>
 
-      {/* ⚠️ Leave this section UNCHANGED as per instruction */}
+      {/* 
+      EF 11/12/25
+      display tasks list from the api
+      */}
       {/* Task list card (shows dashboard summary first, then full task list fallback) */}
       <View style={styles.card}>
         <Text style={styles.cardTitleSmall}>Task</Text>
@@ -208,7 +215,9 @@ export default function Task({ navigation }) {
         })()}
       </View>
 
-      {/* ✅ Recently Identified Partners */}
+      {/* 
+      JA 11/12/2025
+      ✅ Recently Identified Partners */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Recently Identified Potential Partners</Text>
         {recentPartners?.length ? (
@@ -228,7 +237,8 @@ export default function Task({ navigation }) {
         )}
       </View>
 
-      {/* ✅ Outcomes */}
+      {/* JA 11/12/2025 
+      ✅ Outcomes */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Outcomes</Text>
         <View style={styles.outcomesRow}><Text>Introductions</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.introductions)}</Text></View>

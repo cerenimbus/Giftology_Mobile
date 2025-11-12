@@ -75,7 +75,9 @@ export default function Dashboard({ navigation }) {
     
     return tasks;
   }
-
+  {/*EF 11/12/2025
+    getdashboard datas
+    */}
   useEffect(() => {
     let mounted = true;
     async function load() {
@@ -147,6 +149,10 @@ export default function Dashboard({ navigation }) {
           <HamburgerIcon size={22} color="#333" />
         </TouchableOpacity>
         <Text style={styles.title}>Task</Text>
+
+        {/* EF 11/12/2025
+            Display task datas from api in the task card
+        */}
 
         {/* Tasks Card */}
         <TouchableOpacity style={[styles.card, { marginTop: 16 }]} onPress={() => navigation.navigate('Task')}>

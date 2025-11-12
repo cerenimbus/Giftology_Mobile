@@ -9,6 +9,9 @@ import { BackIcon } from '../components/Icons';
 export default function Help({ navigation }) {
   return (
     <View style={styles.container}>
+      {/*EF 11/12/25
+      Display Texts just like in the figma
+      */}
       {/* Header (no gradient) */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
