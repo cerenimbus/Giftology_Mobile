@@ -12,8 +12,10 @@ import CryptoJS from 'crypto-js';
 import { XMLParser } from 'fast-xml-parser';
 import { getAuthCode, getDeviceId } from '../utils/storage';
 import { log, getDebugFlag, logError } from '../utils/debug';
+import Constants from 'expo-constants';
 
-const BASE = 'https://radar.Giftology.com/RRService';
+// const BASE = 'https://radar.Giftology.com/RRService';
+const BASE = 'https://radar.Giftologygroup.com/RRService';
 
 // Use shared debug flag from utils/debug
 // expose setters via utils/debug if needed
@@ -32,31 +34,43 @@ function sha1(str) {
 
 // RHCM 10/22/25 - build a GET URL for the named RRService function with query params
 // Avoids using URLSearchParams for Hermes compatibility in RN.
-function buildUrl(functionName, params) {
+// paramOrder: optional array specifying the order of parameters
+function buildUrl(functionName, params, paramOrder = null) {
   const parts = [];
-  Object.keys(params || {}).forEach((k) => {
+  const keys = paramOrder || Object.keys(params || {});
+  
+  keys.forEach((k) => {
     const v = params[k];
     if (v !== undefined && v !== null) {
-      parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+      // parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+      parts.push(`${k}=${v}`);
     }
   });
   const qs = parts.length ? `?${parts.join('&')}` : '';
   return `${BASE}/${functionName}.php${qs}`;
 }
 
+// Helper to get device ID without dashes
+function getCleanDeviceId() {
+  // Use Constants.sessionId and remove all dashes
+  const sessionId = Constants.sessionId || '';
+  return sessionId.replace(/-/g, '');
+}
+
 // RHCM 10/22/25 - central caller used by all exported API functions below.
 // Returns object: { success, errorNumber, message, raw, parsed, requestUrl }
-async function callService(functionName, extraParams = {}) {
+// paramOrder: optional array to specify parameter order in URL
+async function callService(functionName, extraParams = {}, paramOrder = null) {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
-  const deviceId = (await getDeviceId()) || '';
+  const deviceId = getCleanDeviceId() || (await getDeviceId()) || '';
   const ac = (await getAuthCode()) || '';
-  const now = new Date();
-  const dateStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}-${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const currentDate = new Date();
+  const dateStr = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${String(currentDate.getDate()).padStart(2, '0')}/${currentDate.getFullYear()}-${String(currentDate.getHours()).padStart(2, '0')}:${String(currentDate.getMinutes()).padStart(2, '0')}`;
   // Key is SHA1(deviceId + date + AuthCode + DeviceID) per spec
-  const key = sha1(deviceId + dateStr + ac + deviceId);
+  const key = sha1(deviceId + dateStr);
 
   const params = Object.assign({ DeviceID: deviceId, Date: dateStr, Key: key, AC: ac }, extraParams);
-  const url = buildUrl(functionName, params);
+  const url = buildUrl(functionName, params, paramOrder);
 
   try {
     const debugOn = getDebugFlag && getDebugFlag();
@@ -96,12 +110,54 @@ async function callService(functionName, extraParams = {}) {
   }
 }
 
+// Helper function to get device information
+async function getDeviceInfo() {
+  const Platform = require('react-native').Platform;
+  const Constants = require('expo-constants').default;
+  
+  return {
+    DeviceType: Platform.OS === 'ios' ? 'iOS' : 'Android',
+    DeviceModel: Constants.deviceName || (Platform.OS === 'ios' ? 'iPhone' : 'Android'),
+    DeviceVersion: Platform.Version ? Platform.Version.toString() : '1.0'
+  };
+}
+
 // RHCM 10/22/25 - Authenticate a user with username/password. Server may
 // send an authorization code (AC) via SMS as part of the flow.
 export async function AuthorizeUser(payload) {
   // payload should contain UserName, Password, DeviceType, DeviceModel, DeviceVersion, GiftologyVersion, Language, TestFlag
   // NOTE: server endpoint name changed to AuthorizeUser
-  return callService('AuthorizeUser', payload);
+  
+  // Get device info automatically if not provided
+  const deviceInfo = await getDeviceInfo();
+  
+  // Ensure all required parameters have default values if not provided
+  const params = {
+    DeviceType: payload.DeviceType || deviceInfo.DeviceType,
+    DeviceModel: payload.DeviceModel || deviceInfo.DeviceModel,
+    DeviceVersion: payload.DeviceVersion || deviceInfo.DeviceVersion,
+    UserName: payload.UserName,
+    Password: payload.Password,
+    Language: payload.Language || 'EN',
+    MobileVersion: payload.MobileVersion || payload.GiftologyVersion || '1',
+    ...payload // Include any other params from payload
+  };
+  
+  // Specify the exact parameter order as per the URL spec
+  const paramOrder = [
+    'DeviceID',
+    'DeviceType',
+    'DeviceModel',
+    'DeviceVersion',
+    'Date',
+    'Key',
+    'UserName',
+    'Password',
+    'Language',
+    'MobileVersion'
+  ];
+  
+  return callService('AuthorizeUser', params, paramOrder);
 }
 
 export async function AuthorizeDeviceID({ SecurityCode }) {
@@ -184,4 +240,3 @@ export async function GetHelp({ topic }) {
 export async function UpdateFeedback({ Name, Email, Phone, Response, Update, Comment }) {
   return callService('UpdateFeedback', { Name, Email, Phone, Response, Update, Comment });
 }
-
