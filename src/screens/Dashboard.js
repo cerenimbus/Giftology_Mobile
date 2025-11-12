@@ -23,7 +23,7 @@ export default function Dashboard({ navigation }) {
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: true, easing: Easing.in(Easing.cubic) }).start(() => setMenuOpen(false));
   }
 
-  // Helper function to extract metrics from nested task structure
+  // Helper function to extract metrics from nested task structure (Restored Original Logic)
   function extractMetrics(tasksSummary) {
     if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
       return null;
@@ -49,7 +49,7 @@ export default function Dashboard({ navigation }) {
     return null;
   }
 
-  // Helper function to extract tasks from the malformed structure
+  // Helper function to extract tasks from the malformed structure (Restored Original Logic)
   function extractTasks(tasksSummary) {
     const tasks = [];
     
@@ -111,11 +111,15 @@ export default function Dashboard({ navigation }) {
           };
           
           const parsedData = {
+            // FIX: Pass tasksSummary to the task extractors (Original behavior)
             tasks: extractTasks(apiData.tasksSummary),
+            // FIX: Ensure bestPartner is correctly mapped
             bestPartners: ensureArray(apiData.bestPartner),
-            current: ensureArray(apiData.current),
+            // FIX: Ensure current is correctly mapped to currentPartners (The previous fix that worked)
+            currentPartners: ensureArray(apiData.current),
             recent: ensureArray(apiData.recent),
             dov: ensureArray(apiData.dov),
+            // FIX: Pass tasksSummary to the metrics extractors (Original behavior)
             metrics: extractMetrics(apiData.tasksSummary) || {
               harmlessStarter: 0,
               greenlight: 0,
@@ -177,6 +181,24 @@ export default function Dashboard({ navigation }) {
                 <Text numberOfLines={1} style={{ flex: 1 }}>{partner.Name}</Text>
                 <Text style={{ color: '#e84b4b', fontWeight: '600' }}>
                   ${partner.Amount || 0}
+                </Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ color: '#999', fontStyle: 'italic' }}>No partner data available</Text>
+          )}
+        </View>
+
+        {/* Best Current Card */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Current Partners</Text>
+          {data?.currentPartners && data.currentPartners.length > 0 ? (
+            data.currentPartners.slice(0, 3).map((partner, i) => (
+              <View key={i} style={styles.rowSpace}>
+                <Text numberOfLines={1} style={{ flex: 1 }}>{partner.Name}</Text>
+                {/* Display the Phone number for Current Partners, as Amount is likely missing */}
+                <Text style={{ color: '#e84b4b', fontWeight: '600' }}>
+                  {partner.Phone ? partner.Phone.replace(/[\(\)]/g, '').replace(' ', '') : partner.Amount ? `$${partner.Amount}` : 'N/A'} 
                 </Text>
               </View>
             ))
