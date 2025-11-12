@@ -6,7 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
 import BarChart from '../components/BarChart';
-import { GetTaskList, UpdateTask } from '../api';
+import { GetTaskList, UpdateTask, GetDashboard } from '../api';
 import { log } from '../utils/debug';
 
 const TASKS = [
@@ -19,6 +19,30 @@ const TASKS = [
 export default function Task({ navigation }){
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [dashboardData, setDashboardData] = useState(null); // holds summary data
+
+useEffect(() => {
+  let mounted = true;
+  async function loadDashboard() {
+    try {
+      const res = await GetDashboard();
+      if (!mounted) return;
+      if (res?.success) {
+        setDashboardData(res.data);
+        log('Task: GetDashboard data', res.data);
+      } else {
+        log('Task: GetDashboard failed', res);
+      }
+    } catch (e) {
+      log('Task: GetDashboard error', e);
+    }
+  }
+  loadDashboard();
+  return () => {
+    mounted = false;
+  };
+}, []);
 
   const load = async () => {
     setLoading(true);
@@ -99,18 +123,54 @@ export default function Task({ navigation }){
         </View>
       </View>
 
-      {/* Task list card (compact like screenshot) */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitleSmall}>Task</Text>
-        {loading && <ActivityIndicator style={{marginVertical:12}} />}
-        {tasks.map(t => (
-          <TouchableOpacity key={t.id} style={styles.taskRow} activeOpacity={0.8} onPress={() => onTapTask(t)}>
-            <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
-            <View style={styles.taskMain}><Text style={styles.taskName}>{t.name}</Text><Text style={styles.taskNote}>{t.note}</Text></View>
-            <Text style={styles.taskDate}>{t.date}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* Task list card (shows dashboard summary first, then full task list fallback) */}
+<View style={styles.card}>
+  <Text style={styles.cardTitleSmall}>Task</Text>
+  {loading && <ActivityIndicator style={{ marginVertical: 12 }} />}
+
+  {(() => {
+    // 🔹 Prefer Dashboard summary tasks → fallback to GetTaskList
+    const rows =
+      dashboardData?.tasksSummary?.length
+        ? dashboardData.tasksSummary
+        : tasks.length
+        ? tasks
+        : [];
+
+    if (!rows.length && !loading) {
+      return (
+        <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>
+          No Task
+        </Text>
+      );
+    }
+
+    return rows.slice(0, 10).map((t, i) => {
+      const name =
+        typeof t.name === 'object'
+          ? t.name['#text'] || JSON.stringify(t.name)
+          : t.name || '—';
+
+      const task = t.TaskName || t.task || t.note || '';
+      const date = t.date || t.Date || '';
+
+      return (
+        <TouchableOpacity
+          key={t.id || i}
+          style={styles.taskRow}
+          activeOpacity={0.8}
+          onPress={() => onTapTask(t)}
+        >
+          <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
+          <View style={styles.taskMain}>
+            <Text style={styles.taskName}>{`${name}   ${task}`}</Text>
+          </View>
+          <Text style={styles.taskDate}>{date}</Text>
+        </TouchableOpacity>
+      );
+    });
+  })()}
+</View>
 
       {/* Recently Identified Potential Partners */}
       <View style={styles.card}>

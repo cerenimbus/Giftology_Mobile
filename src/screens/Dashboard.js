@@ -46,7 +46,7 @@ export default function Dashboard({ navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroller}>
-        <Text style={styles.title}>Dashboard</Text>
+        <Text style={styles.title}></Text>
 
         <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
           <HamburgerIcon size={22} color="#333" />
@@ -54,12 +54,18 @@ export default function Dashboard({ navigation }) {
 
         <TouchableOpacity style={[styles.card, { marginTop: 16 }]} onPress={() => navigation.navigate('Task')}>
           <Text style={styles.cardTitle}>Task</Text>
-          {(data?.tasksSummary || []).slice(0, 3).map((t, i) => (
-            <View key={i} style={styles.rowSpace}>
-              <Text>{t.name}</Text>
-              <Text style={{ color: '#999' }}>{t.date}</Text>
-            </View>
-          ))}
+          {(data?.tasksSummary || []).slice(0, 4).map((t, i) => {
+            // Some servers return nested structure like t.name = { '#text': 'James' }
+              const name = typeof t.name === 'object' ? (t.name['#text'] || JSON.stringify(t.name)) : t.name;
+              const task = t.TaskName || t.task || '';
+                return (
+                  <View key={i} style={styles.rowSpace}>
+                    <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
+                    <Text>{`${name || '—'}   ${task}`}</Text>
+                    <Text style={{ color: '#999' }}>{t.date || ''}</Text>
+                    </View>
+                            );
+                            })}             
         </TouchableOpacity>
 
         {/* DOV summary removed from dashboard per specification */}

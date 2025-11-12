@@ -1,56 +1,99 @@
 /* RHCM 10/22/25
  * src/screens/Help.js
- * Help menu - fetches help topics from the server using GetHelp and displays
- * the returned content in an Alert for simplicity.
+ * Help Screen - displays formatted help content with a clean, readable layout.
  */
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Alert, TouchableOpacity } from 'react-native';
-import { GetHelp } from '../api';
-import { log } from '../utils/debug';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { BackIcon } from '../components/Icons';
 
-export default function Help({ navigation }){
-
-  const showHelp = async (topic) => {
-    try {
-      const res = await GetHelp({ topic });
-      if (res?.requestUrl) { try { log('Help: GetHelp URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Help: GetHelp URL (full):', res.requestUrl); } catch(e){} }
-      Alert.alert(topic, res?.help || 'No help content', [{ text: 'OK', onPress: () => {} }]);
-    } catch (e) {
-      Alert.alert('Error', String(e));
-    }
-  };
-
+export default function Help({ navigation }) {
   return (
-    <View style={{flex:1}}>
-      <ScrollView contentContainerStyle={styles.container}>
-        <Text style={{marginTop:6,color:'#666'}} onPress={() => navigation.navigate('Dashboard')}>← Back</Text>
-        <Text style={styles.title}>Help</Text>
-        <View style={styles.card}>
-          <TouchableOpacity style={styles.helpRow} onPress={() => showHelp('Procedure')}>
-            <Text style={styles.h2}>Procedures</Text>
-            <Text style={{color:'#e84b4b'}}>View</Text>
+    <View style={styles.container}>
+      {/* Header (no gradient) */}
+      <View style={styles.header}>
+        <View style={styles.headerRow}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+            <BackIcon size={20} color="#333" />
           </TouchableOpacity>
+          <Text style={styles.headerTitle}>Help Screen</Text>
+        </View>
+      </View>
 
-          <TouchableOpacity style={styles.helpRow} onPress={() => showHelp('Team')}>
-            <Text style={styles.h2}>Teams</Text>
-            <Text style={{color:'#e84b4b'}}>View</Text>
-          </TouchableOpacity>
+      {/* Scrollable content inside a rounded card */}
+      <ScrollView contentContainerStyle={styles.scroll}>
+        <View style={styles.contentCard}>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lorem ipsum dolor</Text>
+            <Text style={styles.sectionText}>
+              Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae
+              pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
+              aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+              Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class
+              aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+            </Text>
+          </View>
 
-          <TouchableOpacity style={styles.helpRow} onPress={() => showHelp('Picture')}>
-            <Text style={styles.h2}>Picture</Text>
-            <Text style={{color:'#e84b4b'}}>View</Text>
-          </TouchableOpacity>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Lorem ipsum</Text>
+            <Text style={styles.sectionText}>
+              Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae
+              pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
+              aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
+              Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class
+              aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+            </Text>
+          </View>
         </View>
       </ScrollView>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container:{padding:20,paddingBottom:120},
-  title:{fontSize:36,color:'#e84b4b',fontWeight:'700'},
-  card:{backgroundColor:'#fff',padding:18,marginTop:12,borderRadius:12},
-  h2:{fontWeight:'700',fontSize:20},
-  p:{fontSize:16,lineHeight:26,marginTop:8},
-  tabBar:{position:'absolute',left:0,right:0,bottom:0,height:70,backgroundColor:'#fff',flexDirection:'row',justifyContent:'space-around',alignItems:'center',borderTopWidth:1,borderColor:'#f0f0f0'}
+  container: { flex: 1, backgroundColor: '#ffffff' },
+
+  // Top header (solid color, no gradient)
+  header: {
+    backgroundColor: '#ffecec',          // light red tint
+    paddingTop: 56,
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  headerRow: { flexDirection: 'row', alignItems: 'center' },
+  backBtn: { padding: 6, marginRight: 10 },
+  headerTitle: { fontSize: 24, color: '#e84b4b', fontWeight: '700' },
+
+  // Scrollable area
+  scroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 120,
+    paddingTop: 12,
+  },
+
+  // Big rounded white card that holds the text blocks
+  contentCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  section: { marginBottom: 18 },
+  sectionTitle: {
+    fontWeight: '700',
+    fontSize: 22,
+    marginBottom: 8,
+    color: '#222',
+  },
+  sectionText: {
+    fontSize: 18,
+    lineHeight: 22,
+    color: '#444',
+    textAlign: 'justify',
+  },
 });
