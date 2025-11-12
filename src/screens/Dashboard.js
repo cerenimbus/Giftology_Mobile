@@ -67,15 +67,7 @@ export default function Dashboard({ navigation }) {
         });
         
         // Second task (nested inside)
-        const secondTask = firstTask.Task;
-        if (secondTask) {
-          const taskName = secondTask.TaskName?.['#text'] || secondTask.Name || 'Untitled Task';
-          const taskDate = secondTask.TaskName?.TaskName?.Date || '';
-          tasks.push({
-            name: taskName,
-            date: taskDate
-          });
-        }
+
       }
     } catch (e) {
       log('Dashboard: Error extracting tasks', e);
@@ -154,11 +146,11 @@ export default function Dashboard({ navigation }) {
         <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
           <HamburgerIcon size={22} color="#333" />
         </TouchableOpacity>
+        <Text style={styles.title}>Task</Text>
 
         {/* Tasks Card */}
         <TouchableOpacity style={[styles.card, { marginTop: 16 }]} onPress={() => navigation.navigate('Task')}>
-<<<<<<< HEAD
-          <Text style={styles.cardTitle}>Task</Text>
+
           {(data?.tasksSummary || []).slice(0, 4).map((t, i) => {
             // Some servers return nested structure like t.name = { '#text': 'James' }
               const name = typeof t.name === 'object' ? (t.name['#text'] || JSON.stringify(t.name)) : t.name;
@@ -171,7 +163,7 @@ export default function Dashboard({ navigation }) {
                     </View>
                             );
                             })}             
-=======
+
           <Text style={styles.cardTitle}>Tasks</Text>
           {data?.tasks && data.tasks.length > 0 ? (
             data.tasks.slice(0, 3).map((task, i) => (
@@ -185,83 +177,9 @@ export default function Dashboard({ navigation }) {
           ) : (
             <Text style={{ color: '#999', fontStyle: 'italic' }}>No tasks available</Text>
           )}
->>>>>>> 4ce48f6dbdeb000111651bdb233782b2b33f21c9
+
         </TouchableOpacity>
 
-        {/* Best Partners Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Top Partners</Text>
-          {data?.bestPartners && data.bestPartners.length > 0 ? (
-            data.bestPartners.slice(0, 3).map((partner, i) => (
-              <View key={i} style={styles.rowSpace}>
-                <Text numberOfLines={1} style={{ flex: 1 }}>{partner.Name}</Text>
-                <Text style={{ color: '#e84b4b', fontWeight: '600' }}>
-                  ${partner.Amount || 0}
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={{ color: '#999', fontStyle: 'italic' }}>No partner data available</Text>
-          )}
-        </View>
-
-        {/* Best Current Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Current Partners</Text>
-          {data?.currentPartners && data.currentPartners.length > 0 ? (
-            data.currentPartners.slice(0, 3).map((partner, i) => (
-              <View key={i} style={styles.rowSpace}>
-                <Text numberOfLines={1} style={{ flex: 1 }}>{partner.Name}</Text>
-                {/* Display the Phone number for Current Partners, as Amount is likely missing */}
-                <Text style={{ color: '#e84b4b', fontWeight: '600' }}>
-                  {partner.Phone ? partner.Phone.replace(/[\(\)]/g, '').replace(' ', '') : partner.Amount ? `$${partner.Amount}` : 'N/A'} 
-                </Text>
-              </View>
-            ))
-          ) : (
-            <Text style={{ color: '#999', fontStyle: 'italic' }}>No partner data available</Text>
-          )}
-        </View>
-
-        {/* Recent Contacts Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Recent Contacts</Text>
-          {data?.recent && data.recent.length > 0 ? (
-            data.recent.slice(0, 3).map((contact, i) => (
-              <View key={i} style={styles.rowSpace}>
-                <Text numberOfLines={1} style={{ flex: 1 }}>{contact.Name}</Text>
-                <Text style={{ color: '#999', fontSize: 12 }}>{contact.Phone || ''}</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={{ color: '#999', fontStyle: 'italic' }}>No recent contacts</Text>
-          )}
-        </View>
-
-        {/* Metrics Summary Card */}
-        {data?.metrics && (
-          <View style={styles.card}>
-            <Text style={styles.cardTitle}>Key Metrics</Text>
-            <View style={styles.metricsGrid}>
-              <View style={styles.metricItem}>
-                <Text style={styles.metricValue}>{data.metrics.totalDOV}</Text>
-                <Text style={styles.metricLabel}>Total DOV</Text>
-              </View>
-              <View style={styles.metricItem}>
-                <Text style={styles.metricValue}>{data.metrics.partner}</Text>
-                <Text style={styles.metricLabel}>Partners</Text>
-              </View>
-              <View style={styles.metricItem}>
-                <Text style={styles.metricValue}>{data.metrics.greenlight}</Text>
-                <Text style={styles.metricLabel}>Greenlight</Text>
-              </View>
-              <View style={styles.metricItem}>
-                <Text style={styles.metricValue}>{data.metrics.clarityConvos}</Text>
-                <Text style={styles.metricLabel}>Clarity Convos</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* DOV summary removed from dashboard per specification */}
       </ScrollView>
