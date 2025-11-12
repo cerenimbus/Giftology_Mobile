@@ -64,8 +64,8 @@ async function callService(functionName, extraParams = {}, paramOrder = null) {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
   const deviceId = getCleanDeviceId() || (await getDeviceId()) || '';
   const ac = (await getAuthCode()) || '';
-  const now = new Date();
-  const dateStr = `${String(now.getMonth() + 1).padStart(2, '0')}/${String(now.getDate()).padStart(2, '0')}/${now.getFullYear()}-${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  const currentDate = new Date();
+  const dateStr = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${String(currentDate.getDate()).padStart(2, '0')}/${currentDate.getFullYear()}-${String(currentDate.getHours()).padStart(2, '0')}:${String(currentDate.getMinutes()).padStart(2, '0')}`;
   // Key is SHA1(deviceId + date + AuthCode + DeviceID) per spec
   const key = sha1(deviceId + dateStr);
 
