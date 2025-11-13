@@ -67,10 +67,10 @@ export default function Login({ navigation }) {
       <Text style={styles.title}>Log in</Text>
 
       <Text style={styles.label}>Email address</Text>
-      <TextInput style={styles.input} placeholder="helloworld@gmail.com" value={email} onChangeText={setEmail} keyboardType="email-address" />
+      <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
 
       <Text style={styles.label}>Password</Text>
-      <TextInput style={styles.input} placeholder="Password" secureTextEntry value={password} onChangeText={setPassword} />
+      <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
 
       <View style={styles.row}>
         <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:8}}>
