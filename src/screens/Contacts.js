@@ -86,7 +86,7 @@ export default function Contacts({ navigation }){
  
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={{marginTop:20,marginLeft:12}} onPress={() => navigation.navigate('Dashboard')}>
+      <TouchableOpacity style={{marginTop:20,marginLeft:12}} onPress={() => navigation.goBack()}>
         <Text style={{color:'#666'}}>← Back</Text>
       </TouchableOpacity>
       <Text style={styles.title}>Contacts</Text>
@@ -99,7 +99,7 @@ export default function Contacts({ navigation }){
           </View>
           {contacts.length > 0 ? (
             contacts.map((item, i) => (
-              <View key={item.id || i} style={styles.row}>
+                <View key={`contact-${item.id ?? i}`} style={styles.row}>
                 <Text style={styles.name}>{item.name || ''}</Text>
                 <Text style={styles.status}>{item.status || ''}</Text>
                 <Text style={styles.phone}>{item.phone || ''}</Text>

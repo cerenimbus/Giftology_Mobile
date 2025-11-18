@@ -19,7 +19,7 @@ export default function BarChart({ data = [], height = 44, color = '#e84b4b', ga
       {data.map((v, i) => {
         const barHeight = (v / max) * (height - 6); // leave small top padding
         return (
-          <View key={i} style={[styles.barWrapper, { marginLeft: i === 0 ? 0 : gap }]}> 
+          <View key={`bar-${i}`} style={[styles.barWrapper, { marginLeft: i === 0 ? 0 : gap }]}> 
             <View style={[styles.bar, { height: barHeight, backgroundColor: color }]} />
           </View>
         );

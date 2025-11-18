@@ -1,193 +1,277 @@
 /* RHCM 10/22/25
- * src/screens/Dashboard.js
- * The main dashboard view showing summary metrics and navigation to Tasks,
- * Contacts, Help, and Feedback. Fetches dashboard data via GetDashboard.
+ * src/screens/Task.js
+ * Task list and simple task completion. Loads tasks with GetTaskList and
+ * calls UpdateTask to mark completion.
  */
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Animated, Easing } from 'react-native';
 import { HamburgerIcon, BackIcon } from '../components/Icons';
-import { GetDashboard } from '../api';
+import BarChart from '../components/BarChart';
+import { GetTaskList, UpdateTask, GetDashboard } from '../api';
 import { log } from '../utils/debug';
 
 export default function Dashboard({ navigation }) {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null); // holds summary data
   const [menuOpen, setMenuOpen] = useState(false);
-  const [data, setData] = useState(null);
-
   const anim = useRef(new Animated.Value(0)).current;
 
   function openMenu() {
     setMenuOpen(true);
     Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: true, easing: Easing.out(Easing.cubic) }).start();
   }
+
   function closeMenu() {
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: true, easing: Easing.in(Easing.cubic) }).start(() => setMenuOpen(false));
   }
 
-  // Helper function to extract metrics from nested task structure (Restored Original Logic)
-  function extractMetrics(tasksSummary) {
-    if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
-      return null;
-    }
-    
-    // Navigate through the nested structure to find metrics
-    try {
-      const nested = tasksSummary[0]?.name?.Task?.TaskName;
-      if (nested) {
-        return {
-          harmlessStarter: parseInt(nested.HarmlessStarter) || 0,
-          greenlight: parseInt(nested.Greenlight) || 0,
-          clarityConvos: parseInt(nested.ClarityConvos) || 0,
-          totalDOV: parseInt(nested.TotalDOV) || 0,
-          introduction: parseInt(nested.Introduction) || 0,
-          referral: parseInt(nested.Referral) || 0,
-          partner: parseInt(nested.Partner) || 0
-        };
-      }
-    } catch (e) {
-      log('Dashboard: Error extracting metrics', e);
-    }
-    return null;
-  }
-
-  // Helper function to extract tasks from the malformed structure (Restored Original Logic)
-  function extractTasks(tasksSummary) {
-    const tasks = [];
-    
-    if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
-      return tasks;
-    }
-    
-    try {
-      const firstTask = tasksSummary[0]?.name;
-      if (firstTask) {
-        // First task
-        tasks.push({
-          name: firstTask['#text'] || 'Untitled Task',
-          date: firstTask.TaskName?.Date || ''
-        });
-        
-        // Second task (nested inside)
-
-      }
-    } catch (e) {
-      log('Dashboard: Error extracting tasks', e);
-    }
-    
-    return tasks;
-  }
-  {/*EF 11/12/2025
-    getdashboard datas
-    */}
+  // 🔹 Load dashboard data from API
   useEffect(() => {
     let mounted = true;
-    async function load() {
+    async function loadDashboard() {
       try {
         const res = await GetDashboard();
         if (!mounted) return;
-        
-        if (res?.requestUrl) {
-          try { 
-            log('Dashboard: GetDashboard URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
-            log('Dashboard: GetDashboard URL (full):', res.requestUrl); 
-          } catch (e) {}
-        }
-        
-        log('Dashboard: Full API response:', JSON.stringify(res, null, 2));
-        
-        if (res?.success && res?.data) {
-          const apiData = res.data;
-          
-          // Ensure arrays - API already returns lowercase keys
-          const ensureArray = (value) => {
-            if (!value) return [];
-            if (Array.isArray(value)) return value;
-            return [value];
-          };
-          
-          const parsedData = {
-            // FIX: Pass tasksSummary to the task extractors (Original behavior)
-            tasks: extractTasks(apiData.tasksSummary),
-            // FIX: Ensure bestPartner is correctly mapped
-            bestPartners: ensureArray(apiData.bestPartner),
-            // FIX: Ensure current is correctly mapped to currentPartners (The previous fix that worked)
-            currentPartners: ensureArray(apiData.current),
-            recent: ensureArray(apiData.recent),
-            dov: ensureArray(apiData.dov),
-            // FIX: Pass tasksSummary to the metrics extractors (Original behavior)
-            metrics: extractMetrics(apiData.tasksSummary) || {
-              harmlessStarter: 0,
-              greenlight: 0,
-              clarityConvos: 0,
-              totalDOV: 0,
-              introduction: 0,
-              referral: 0,
-              partner: 0
-            }
-          };
-          
-          log('Dashboard: Parsed data:', JSON.stringify(parsedData, null, 2));
-          setData(parsedData);
+        if (res?.success) {
+          setDashboardData(res.data);
+          log('Task: GetDashboard data', res.data);
         } else {
-          log('Dashboard: API response not successful', res);
+          log('Task: GetDashboard failed', res);
         }
       } catch (e) {
-        log('Dashboard: GetDashboard exception', e && e.stack ? e.stack : e);
+        log('Task: GetDashboard error', e);
       }
     }
-    load();
+    loadDashboard();
     return () => {
       mounted = false;
     };
   }, []);
 
+  // 🔹 Load task list from API
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await GetTaskList();
+      log('Task: GetTaskList response', res);
+      if (res?.requestUrl) {
+        try {
+          log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+          log('Task: GetTaskList URL (full):', res.requestUrl);
+        } catch (e) {}
+      }
+      if (res?.success) setTasks(res.tasks || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const onTapTask = (task) => {
+    Alert.alert('Mark complete?', 'Are you sure you want to mark this task completed?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            log('Task: update requested', task.id);
+            const res = await UpdateTask({ Task: task.id, Status: 1 });
+            log('Task: UpdateTask response', res);
+            if (res?.requestUrl) {
+              try {
+                log('Task: UpdateTask URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+                log('Task: UpdateTask URL (full):', res.requestUrl);
+              } catch (e) {}
+            }
+            await load();
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  // Helper for safe values
+  const safe = (v) => (v !== undefined && v !== null ? v : '—');
+
+  // Extract dashboard fields (handle null gracefully)
+  const bestPartners = dashboardData?.bestPartner || [];
+  const currentRunners = dashboardData?.current || [];
+  const recentPartners = dashboardData?.recent || [];
+  const outcomes = dashboardData?.outcomes || {};
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroller}>
-        <Text style={styles.title}></Text>
 
         <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
           <HamburgerIcon size={22} color="#333" />
         </TouchableOpacity>
-        <Text style={styles.title}>Task</Text>
 
-        {/* EF 11/12/2025
-            Display task datas from api in the task card
-        */}
+        <Text style={styles.title}>Dashboard</Text>
 
-        {/* Tasks Card */}
-        <TouchableOpacity style={[styles.card, { marginTop: 16 }]} onPress={() => navigation.navigate('Task')}>
+      {/* 
+      JA 11/12/2025
+      ✅ Best Referral Partner (from GetDashboard) */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Best Referral Partner</Text>
+        {bestPartners?.length ? (
+            bestPartners.slice(0, 4).map((p, i) => (
+              <View key={`best-${p?.id ?? i}`} style={styles.smallRow}>
+              <Text style={styles.partner}>{safe(p.Name || p.name)}</Text>
+              <Text style={styles.partnerAmount}>{safe(p.Amount || p.amount)}</Text>
+            </View>
+          ))
+        ) : (
+          <>
+            <View style={styles.smallRow}><Text>Jack Miller</Text><Text>$36,000</Text></View>
+            <View style={styles.smallRow}><Text>Jhon de rosa</Text><Text>$22,425</Text></View>
+            <View style={styles.smallRow}><Text>Martin Mayers</Text><Text>$17,089</Text></View>
+            <View style={styles.smallRow}><Text>Kent Mayers</Text><Text>$11,298</Text></View>
+          </>
+        )}
+      </View>
 
-          {(data?.tasksSummary || []).slice(0, 4).map((t, i) => {
-            // Some servers return nested structure like t.name = { '#text': 'James' }
-              const name = typeof t.name === 'object' ? (t.name['#text'] || JSON.stringify(t.name)) : t.name;
-              const task = t.TaskName || t.task || '';
-                return (
-                  <View key={i} style={styles.rowSpace}>
-                    <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
-                    <Text>{`${name || '—'}   ${task}`}</Text>
-                    <Text style={{ color: '#999' }}>{t.date || ''}</Text>
-                    </View>
-                            );
-                            })}             
+      {/* 
+      JA 11/12/2025
+      ✅ Current Runaway Relationships (from GetDashboard) */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Current Runaway Relationships</Text>
+        {currentRunners?.length ? (
+            currentRunners.slice(0, 4).map((c, i) => (
+              <View key={`cur-${c?.id ?? i}`} style={styles.smallRow}>
+              <Text>{safe(c.Name || c.name)}</Text>
+              <Text style={styles.phone}>{safe(c.Phone || c.phone)}</Text>
+            </View>
+          ))
+        ) : (
+          <>
+            <View style={styles.smallRow}><Text>Lucas Mendoza</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+            <View style={styles.smallRow}><Text>Ava Torres</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+            <View style={styles.smallRow}><Text>Ethan Brooks</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+            <View style={styles.smallRow}><Text>Sophia Ramirez</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+          </>
+        )}
+      </View>
+        {/* JA 11/12/2025
+        ✅ Dates & DOV (using total + chart placeholder until expanded) */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Dates & DOV</Text>
+        <View style={styles.pillsRow}>
+          <View style={styles.pill}><Text>Total DOV</Text><Text style={styles.pillNumber}>{safe(dashboardData?.dovTotal)}</Text></View>
+          <View style={styles.pill}><Text>Introductions</Text><Text style={styles.pillNumber}>{safe(outcomes?.introductions)}</Text></View>
+          <View style={styles.pill}><Text>Referrals</Text><Text style={styles.pillNumber}>{safe(outcomes?.referrals)}</Text></View>
+        </View>
 
-          <Text style={styles.cardTitle}>Tasks</Text>
-          {data?.tasks && data.tasks.length > 0 ? (
-            data.tasks.slice(0, 3).map((task, i) => (
-              <View key={i} style={styles.rowSpace}>
-                <Text numberOfLines={1} style={{ flex: 1 }}>
-                  {task.name}
-                </Text>
-                <Text style={{ color: '#999', marginLeft: 8 }}>{task.date}</Text>
-              </View>
-            ))
-          ) : (
-            <Text style={{ color: '#999', fontStyle: 'italic' }}>No tasks available</Text>
-          )}
+        <View style={styles.dovBox}>
+          <View style={styles.dovChartPlaceholder}>
+            <BarChart data={[40, 80, 160, 120, 200]} height={60} color={'#e84b4b'} />
+          </View>
+          <Text style={styles.dovTotal}>{safe(dashboardData?.dovTotal)}</Text>
+        </View>
+      </View>
 
-        </TouchableOpacity>
+      {/* 
+      EF 11/12/25
+      display tasks list from the api
+      */}
+      {/* Task list card (shows dashboard summary first, then full task list fallback) */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitleSmall}>Task</Text>
+        {loading && <ActivityIndicator style={{ marginVertical: 12 }} />}
 
+        {(() => {
+          // 🔹 Prefer Dashboard summary tasks → fallback to GetTaskList
+          const rows =
+            dashboardData?.tasksSummary?.length
+              ? dashboardData.tasksSummary
+              : tasks.length
+              ? tasks
+              : [];
 
-        {/* DOV summary removed from dashboard per specification */}
+          if (!rows.length && !loading) {
+            return (
+              <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>
+                No Task
+              </Text>
+            );
+          }
+
+          return rows.slice(0, 10).map((t, i) => {
+            const name =
+              typeof t.name === 'object'
+                ? t.name['#text'] || JSON.stringify(t.name)
+                : t.name || '—';
+
+            const task = t.TaskName || t.task || t.note || '';
+            const date = t.date || t.Date || '';
+
+            return (
+              <TouchableOpacity
+                key={`row-${t?.id ?? i}`}
+                style={styles.taskRow}
+                activeOpacity={0.8}
+                onPress={() => onTapTask(t)}
+              >
+                <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
+                <View style={styles.taskMain}>
+                  <Text style={styles.taskName}>{`${name}   ${task}`}</Text>
+                </View>
+                <Text style={styles.taskDate}>{date}</Text>
+              </TouchableOpacity>
+            );
+          });
+        })()}
+      </View>
+
+      {/* 
+      JA 11/12/2025
+      ✅ Recently Identified Partners */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Recently Identified Potential Partners</Text>
+        {recentPartners?.length ? (
+          recentPartners.slice(0, 4).map((r, i) => (
+            <View key={`recent-${r?.id ?? i}`} style={styles.smallRow}>
+              <Text>{safe(r.Name || r.name)}</Text>
+              <Text style={styles.phone}>{safe(r.Phone || r.phone)}</Text>
+            </View>
+          ))
+        ) : (
+          <>
+            <View style={styles.smallRow}><Text>Charly Oman</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+            <View style={styles.smallRow}><Text>Jhon de rosa</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+            <View style={styles.smallRow}><Text>Martin Mayers</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+            <View style={styles.smallRow}><Text>Kent Mayers</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
+          </>
+        )}
+      </View>
+
+      {/* JA 11/12/2025 
+      ✅ Outcomes */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Outcomes</Text>
+        <View style={styles.outcomesRow}><Text>Introductions</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.introductions)}</Text></View>
+        <View style={styles.outcomesRow}><Text>Referrals</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.referrals)}</Text></View>
+        <View style={styles.outcomesRow}><Text>Referral Partners</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.partners)}</Text></View>
+
+        <View style={styles.revenueBox}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, color: '#666' }}>Referral Revenue Generated</Text>
+            <View style={styles.smallChart}>
+              <BarChart data={[40, 80, 120, 60, 160, 100]} height={44} color={'#e84b4b'} />
+            </View>
+          </View>
+          <Text style={styles.revenueAmount}>$105,000</Text>
+        </View>
+      </View>
+
+      <View style={{ height: 40 }} />
       </ScrollView>
 
       {menuOpen && (
@@ -201,9 +285,6 @@ export default function Dashboard({ navigation }) {
           >
             <TouchableOpacity onPress={closeMenu} style={styles.menuClose}>
               <BackIcon size={18} color="#333" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Main'); }}>
-              <Text style={styles.menuText}>Dashboard</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Task'); }}>
@@ -239,24 +320,37 @@ export default function Dashboard({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   scroller: { padding: 20, paddingBottom: 120 },
-  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 10 },
-  menuButton: { position: 'absolute', right: 20, top: 28, padding: 8, backgroundColor: '#fff', borderRadius: 8, elevation: 2 },
-  card: { backgroundColor: '#fff', padding: 16, borderRadius: 14, marginTop: 16, shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
+  page: { padding: 20, paddingBottom: 120, backgroundColor: '#fff' },
+  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 6 },
+  card: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginTop: 18, shadowColor: '#000', shadowOpacity: 0.04, elevation: 3 },
   cardTitle: { fontWeight: '700', marginBottom: 12, fontSize: 16 },
-  rowSpace: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, alignItems: 'center' },
-  pill: { backgroundColor: '#fdeaea', borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  big: { fontSize: 20, fontWeight: '700' },
-  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-  metricItem: { width: '50%', paddingVertical: 12, alignItems: 'center' },
-  metricValue: { fontSize: 24, fontWeight: '700', color: '#e84b4b' },
-  metricLabel: { fontSize: 12, color: '#666', marginTop: 4 },
-  tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 70, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#f0f0f0' },
-  tab: { alignItems: 'center' },
+  cardTitleSmall: { fontWeight: '700', marginBottom: 12, fontSize: 14, color: '#333' },
+  smallRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  partner: { color: '#333' },
+  partnerAmount: { color: '#111', fontWeight: '700' },
+  phone: { color: '#666' },
+  pillsRow: { marginTop: 6 },
+  pill: { backgroundColor: '#fdeaea', borderRadius: 12, padding: 10, marginVertical: 6, flexDirection: 'row', justifyContent: 'space-between' },
+  pillNumber: { fontWeight: '700' },
+  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
+  dovChartPlaceholder: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', height: 60, width: 180, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
+  dovTotal: { fontSize: 18, color: '#999', marginLeft: 12 },
+  taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  checkbox: { width: 28, color: '#999' },
+  taskMain: { flex: 1 },
+  taskName: { fontSize: 16 },
+  taskDate: { color: '#999' },
+  outcomesRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  outcomeNumber: { fontWeight: '700', fontSize: 18 },
+  revenueBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
+  smallChart: { height: 44, width: 140, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
+  revenueAmount: { fontSize: 22, fontWeight: '700', color: '#999', marginLeft: 12 },
+  menuButton: { position: 'absolute', right: 20, top: 16, padding: 8, backgroundColor: '#fff', borderRadius: 8, elevation: 2, zIndex: 30 },
   menuOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'flex-start', alignItems: 'flex-end' },
   backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'transparent' },
   menuCard: { width: 300, marginTop: 80, marginRight: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, elevation: 8, shadowColor: '#000', shadowOpacity: 0.08 },
   menuClose: { alignSelf: 'flex-end', padding: 6 },
   menuItem: { paddingVertical: 12 },
   menuText: { fontSize: 16 },
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 6 }
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: 6 },
 });

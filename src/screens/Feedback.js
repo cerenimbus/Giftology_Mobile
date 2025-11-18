@@ -44,7 +44,7 @@ export default function Feedback({ navigation }){
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={{marginTop:6,color:'#666'}} onPress={() => navigation.navigate('Dashboard')}>← Back</Text>
+      <Text style={{marginTop:6,color:'#666'}} onPress={() => navigation.goBack()}>← Back</Text>
       <Text style={styles.title}>Feedback</Text>
       <View style={styles.card}>
         <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Name" />
