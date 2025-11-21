@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // bottom tabs removed; stack navigation only
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import Login from './src/screens/Login';
 import Dashboard from './src/screens/Dashboard';
 import Contacts from './src/screens/Contacts';
@@ -14,6 +14,7 @@ import Verify from './src/screens/Verify';
 import Loading from './src/screens/Loading';
 import Task from './src/screens/Task';
 import Preview from './src/screens/Preview';
+import { navigationRef } from './src/navigation/NavigationService';
 
 const Stack = createNativeStackNavigator();
 
@@ -21,7 +22,8 @@ const Stack = createNativeStackNavigator();
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <SafeAreaView style={{ flex: 1 }} edges={['top']}>
+        <NavigationContainer ref={navigationRef}>
   <Stack.Navigator initialRouteName="Loading" screenOptions={{ headerShown: false }}>
           <Stack.Screen name="Login" component={Login} />
           <Stack.Screen name="Preview" component={Preview} />
@@ -35,7 +37,8 @@ export default function App() {
           <Stack.Screen name="Verify" component={Verify} />
           <Stack.Screen name="Loading" component={Loading} />
         </Stack.Navigator>
-      </NavigationContainer>
+        </NavigationContainer>
+      </SafeAreaView>
     </SafeAreaProvider>
   );
 }
