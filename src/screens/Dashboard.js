@@ -121,10 +121,6 @@ export default function Dashboard({ navigation }) {
       ✅ Best Referral Partner (from GetDashboard) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Best Referral Partner</Text>
-        <View style={styles.graphLabels}>
-          <Text style={styles.graphTitle}>Name</Text>
-          <Text style={styles.graphTitleRight}>Value</Text>
-        </View>
         {bestPartners?.length ? (
             bestPartners.slice(0, 4).map((p, i) => (
               <View key={`best-${p?.id ?? i}`} style={styles.smallRow}>
@@ -173,6 +169,7 @@ export default function Dashboard({ navigation }) {
           <View style={styles.pill}><Text>Referrals</Text><Text style={styles.pillNumber}>{safe(outcomes?.referrals)}</Text></View>
         </View>
 
+        <Text style={styles.dovGraphTitle}>Total DOV Activities</Text>
         <View style={styles.dovBox}>
           <View style={styles.dovChartPlaceholder}>
             <BarChart data={[40, 80, 160, 120, 200]} height={60} color={'#e84b4b'} />
@@ -266,7 +263,7 @@ export default function Dashboard({ navigation }) {
 
         <View style={styles.revenueBox}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#666' }}>Referral Revenue Generated</Text>
+            <Text style={{ fontSize: 16, color: '#333', fontWeight: '700', marginBottom: 10 }}>Referral Revenue Generated</Text>
             <View style={styles.smallChart}>
               <BarChart data={[40, 80, 120, 60, 160, 100]} height={44} color={'#e84b4b'} />
             </View>
@@ -339,7 +336,8 @@ const styles = StyleSheet.create({
   pillsRow: { marginTop: 6 },
   pill: { backgroundColor: '#fdeaea', borderRadius: 12, padding: 10, marginVertical: 6, flexDirection: 'row', justifyContent: 'space-between' },
   pillNumber: { fontWeight: '700' },
-  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
+  dovGraphTitle: { color: '#333', fontSize: 16, marginTop: 12, marginBottom: 6, fontWeight: '700' },
+  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: 6, justifyContent: 'space-between' },
   dovChartPlaceholder: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', height: 60, width: 180, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
   dovTotal: { fontSize: 18, color: '#999', marginLeft: 12 },
   taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#f6f6f6' },
