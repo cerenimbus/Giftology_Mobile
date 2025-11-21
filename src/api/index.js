@@ -12,6 +12,7 @@ import CryptoJS from 'crypto-js';
 import { XMLParser } from 'fast-xml-parser';
 import { getAuthCode, getDeviceId } from '../utils/storage';
 import { log, getDebugFlag, logError } from '../utils/debug';
+import { handleApiTimeout } from '../utils/timeoutHandler';
 import Constants from 'expo-constants';
 
 // const BASE = 'https://radar.Giftology.com/RRService';
@@ -85,7 +86,8 @@ async function callService(functionName, extraParams = {}, paramOrder = null) {
       log(`[RRService] Request URL (full):`, url);
     }
 
-    const res = await fetch(url);
+    // Use the shared fetchWithTimeout helper (default 30s timeout)
+    const res = await fetchWithTimeout(url, {}, 30000);
     const txt = await res.text();
 
     if (getDebugFlag && getDebugFlag()) {
@@ -105,8 +107,13 @@ async function callService(functionName, extraParams = {}, paramOrder = null) {
 
     return { success: result === 'success', errorNumber: err, message, raw: ri, parsed: ri, requestUrl: url };
   } catch (e) {
+    const isTimeout = (e && (e.name === 'AbortError' || String(e).toLowerCase().includes('timeout')));
     if (getDebugFlag && getDebugFlag()) logError && logError(`[RRService] Error calling ${functionName}:`, e && e.stack ? e.stack : e);
-    return { success: false, errorNumber: 100, message: String(e), requestUrl: url };
+    if (isTimeout) {
+      // Show a system modal and redirect to Login when user taps OK
+      try { handleApiTimeout(); } catch (err) { /* ignore */ }
+    }
+    return { success: false, errorNumber: isTimeout ? 408 : 100, message: isTimeout ? 'Request timed out' : String(e), requestUrl: url };
   }
 }
 
@@ -239,4 +246,48 @@ export async function GetHelp({ topic }) {
 
 export async function UpdateFeedback({ Name, Email, Phone, Response, Update, Comment }) {
   return callService('UpdateFeedback', { Name, Email, Phone, Response, Update, Comment });
+}
+
+// RHCM 11/21/25 - fetch wrapper with timeout support.
+// Usage: `const res = await fetchWithTimeout(url, opts, timeoutMs);`
+// If the environment supports AbortController, it will abort the request to avoid leaking.
+export async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+  if (!timeout || timeout <= 0) {
+    return fetch(url, options);
+  }
+
+  // Prefer AbortController when available so the underlying request is cancelled.
+  const hasAbort = typeof globalThis.AbortController !== 'undefined';
+  let controller;
+  let timer;
+
+  if (hasAbort) {
+    controller = new AbortController();
+    // If caller already passed a signal, preserve it (do not override)
+    if (!options.signal) options.signal = controller.signal;
+    timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const res = await fetch(url, options);
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      throw e;
+    }
+  }
+
+  // Fallback: race fetch against a timeout promise
+  const fetchPromise = fetch(url, options);
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Timeout')), timeout);
+  });
+
+  try {
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
+    clearTimeout(timer);
+    return res;
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
 }

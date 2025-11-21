@@ -12,8 +12,8 @@ import { setAuthCode, getAuthCode } from '../utils/storage';
 import { log, setDebugFlag, getDebugFlag } from '../utils/debug';
 
 export default function Login({ navigation }) {
-  const [email, setEmail] = useState('helloworld@gmail.com');
-  const [password, setPassword] = useState('password');
+  const [email, setEmail] = useState();
+  const [password, setPassword] = useState();
   const [termsChecked, setTermsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
 
