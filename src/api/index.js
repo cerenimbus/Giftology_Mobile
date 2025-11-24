@@ -176,6 +176,34 @@ export async function GetDashboard() {
   if (!r.success) return r;
 
   const sel = r.parsed?.Selections || {};
+  
+  // Extract chart data arrays
+  // DOV Chart: expects array of numbers from DOVChart or dovChartData
+  let dovChartData = [];
+  if (sel?.DOVChart) {
+    const dovChart = Array.isArray(sel.DOVChart) ? sel.DOVChart : [sel.DOVChart];
+    dovChartData = dovChart.map(item => {
+      const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
+      return typeof val === 'number' ? val : Number(val) || 0;
+    });
+  } else if (sel?.dovChartData) {
+    const arr = Array.isArray(sel.dovChartData) ? sel.dovChartData : [sel.dovChartData];
+    dovChartData = arr.map(v => typeof v === 'number' ? v : Number(v) || 0);
+  }
+  
+  // Revenue Chart: expects array of numbers from RevenueChart or revenueChartData
+  let revenueChartData = [];
+  if (sel?.RevenueChart) {
+    const revChart = Array.isArray(sel.RevenueChart) ? sel.RevenueChart : [sel.RevenueChart];
+    revenueChartData = revChart.map(item => {
+      const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
+      return typeof val === 'number' ? val : Number(val) || 0;
+    });
+  } else if (sel?.revenueChartData) {
+    const arr = Array.isArray(sel.revenueChartData) ? sel.revenueChartData : [sel.revenueChartData];
+    revenueChartData = arr.map(v => typeof v === 'number' ? v : Number(v) || 0);
+  }
+  
   // Map a compact JS object expected by UI
   const data = {
     bestPartner: sel?.BestPartner || null,
@@ -187,9 +215,25 @@ export async function GetDashboard() {
       introductions: sel?.Introduction || 0,
       referrals: sel?.Referral || 0,
       partners: sel?.Partner || 0,
-    }
+    },
+    dovChartData: dovChartData.length > 0 ? dovChartData : null,
+    revenueChartData: revenueChartData.length > 0 ? revenueChartData : null,
   };
   return { success: true, data };
+}
+
+export async function GetDOVDateList() {
+  const r = await callService('GetDOVDateList');
+  if (!r.success) return r;
+  const selections = r.parsed?.Selections || {};
+  let dovData = [];
+  if (selections?.DOV) {
+    const as = Array.isArray(selections.DOV) ? selections.DOV : [selections.DOV];
+    dovData = as.map(d => ({ name: d?.Name || '', count: Number(d?.Count) || 0 }));
+  }
+  // Extract just the count values for the chart
+  const chartData = dovData.map(d => d.count);
+  return { success: true, dovData, chartData };
 }
 
 export async function GetTaskList() {

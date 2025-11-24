@@ -172,7 +172,11 @@ export default function Dashboard({ navigation }) {
         <Text style={styles.dovGraphTitle}>Total DOV Activities</Text>
         <View style={styles.dovBox}>
           <View style={styles.dovChartPlaceholder}>
-            <BarChart data={[40, 80, 160, 120, 200]} height={60} color={'#e84b4b'} />
+            <BarChart 
+              data={dashboardData?.dovChartData && dashboardData.dovChartData.length > 0 ? dashboardData.dovChartData : [40, 80, 160, 120, 200]} 
+              height={60} 
+              color={'#e84b4b'} 
+            />
           </View>
           <Text style={styles.dovTotal}>{safe(dashboardData?.dovTotal)}</Text>
         </View>
@@ -265,7 +269,11 @@ export default function Dashboard({ navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 16, color: '#333', fontWeight: '700', marginBottom: 10 }}>Referral Revenue Generated</Text>
             <View style={styles.smallChart}>
-              <BarChart data={[40, 80, 120, 60, 160, 100]} height={44} color={'#e84b4b'} />
+              <BarChart 
+                data={dashboardData?.revenueChartData && dashboardData.revenueChartData.length > 0 ? dashboardData.revenueChartData : [40, 80, 120, 60, 160, 100]} 
+                height={44} 
+                color={'#e84b4b'} 
+              />
             </View>
           </View>
           <Text style={styles.revenueAmount}>$105,000</Text>
