@@ -177,10 +177,36 @@ export async function GetDashboard() {
 
   const sel = r.parsed?.Selections || {};
   
+  // The XML parser is nesting TotalDOV, Introduction, etc. inside Task structure
+  // We need to extract them from wherever they ended up
+  // Helper function to recursively search for a value in nested objects
+  const findValue = (obj, key) => {
+    if (!obj || typeof obj !== 'object') return undefined;
+    if (obj[key] !== undefined) return obj[key];
+    for (const k in obj) {
+      if (k === key) return obj[k];
+      const found = findValue(obj[k], key);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  };
+  
+  // Extract values - try direct access first, then search nested structure
+  const totalDOV = sel?.TotalDOV ?? findValue(sel, 'TotalDOV');
+  const introduction = sel?.Introduction ?? findValue(sel, 'Introduction');
+  const referral = sel?.Referral ?? findValue(sel, 'Referral');
+  const partner = sel?.Partner ?? findValue(sel, 'Partner');
+  const dovElements = sel?.DOV ?? findValue(sel, 'DOV');
+  
   // Extract chart data arrays
-  // DOV Chart: expects array of numbers from DOVChart or dovChartData
   let dovChartData = [];
-  if (sel?.DOVChart) {
+  if (dovElements) {
+    const dovArray = Array.isArray(dovElements) ? dovElements : [dovElements];
+    dovChartData = dovArray.map(dov => {
+      const count = dov?.Count || dov?.count || 0;
+      return typeof count === 'number' ? count : Number(count) || 0;
+    });
+  } else if (sel?.DOVChart) {
     const dovChart = Array.isArray(sel.DOVChart) ? sel.DOVChart : [sel.DOVChart];
     dovChartData = dovChart.map(item => {
       const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
@@ -210,15 +236,17 @@ export async function GetDashboard() {
     current: sel?.Current || null,
     recent: sel?.Recent || null,
     tasksSummary: Array.isArray(sel?.Task) ? sel.Task.map(t => ({ name: t.TaskName, date: t.Date })) : (sel?.Task ? [{ name: sel.Task.TaskName, date: sel.Task.Date }] : []),
-    dovTotal: sel?.TotalDOV || sel?.dovTotal || null,
+    // Extract and convert values (handle nested structure from XML parser)
+    dovTotal: totalDOV !== undefined && totalDOV !== null ? Number(totalDOV) : null,
     outcomes: {
-      introductions: sel?.Introduction || 0,
-      referrals: sel?.Referral || 0,
-      partners: sel?.Partner || 0,
+      introductions: introduction !== undefined && introduction !== null ? Number(introduction) : 0,
+      referrals: referral !== undefined && referral !== null ? Number(referral) : 0,
+      partners: partner !== undefined && partner !== null ? Number(partner) : 0,
     },
     dovChartData: dovChartData.length > 0 ? dovChartData : null,
     revenueChartData: revenueChartData.length > 0 ? revenueChartData : null,
   };
+  
   return { success: true, data };
 }
 
