@@ -4,6 +4,7 @@
  */
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { BackIcon } from '../components/Icons';
 import { UpdateFeedback } from '../api';
 import { log } from '../utils/debug';
 
@@ -44,7 +45,9 @@ export default function Feedback({ navigation }){
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={{marginTop:6,color:'#666'}} onPress={() => navigation.goBack()}>← Back</Text>
+      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <BackIcon size={28} color="#666" />
+      </TouchableOpacity>
       <Text style={styles.title}>Feedback</Text>
       <View style={styles.card}>
         <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Name" />
@@ -70,6 +73,7 @@ export default function Feedback({ navigation }){
 
 const styles = StyleSheet.create({
   container:{padding:20,paddingBottom:120,backgroundColor:'#fff'},
+  backButton:{padding:6,marginTop:20,marginBottom:4,alignSelf:'flex-start'},
   title:{fontSize:36,color:'#e84b4b',fontWeight:'700'},
   card:{backgroundColor:'#fff',padding:12,marginTop:12,borderRadius:12},
   input:{borderWidth:1,borderColor:'#e6e6e6',borderRadius:12,padding:14,marginTop:8},

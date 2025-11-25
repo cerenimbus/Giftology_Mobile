@@ -12,6 +12,7 @@ import CryptoJS from 'crypto-js';
 import { XMLParser } from 'fast-xml-parser';
 import { getAuthCode, getDeviceId } from '../utils/storage';
 import { log, getDebugFlag, logError } from '../utils/debug';
+import { handleApiTimeout } from '../utils/timeoutHandler';
 import Constants from 'expo-constants';
 
 // const BASE = 'https://radar.Giftology.com/RRService';
@@ -85,7 +86,8 @@ async function callService(functionName, extraParams = {}, paramOrder = null) {
       log(`[RRService] Request URL (full):`, url);
     }
 
-    const res = await fetch(url);
+    // Use the shared fetchWithTimeout helper (default 30s timeout)
+    const res = await fetchWithTimeout(url, {}, 30000);
     const txt = await res.text();
 
     if (getDebugFlag && getDebugFlag()) {
@@ -105,8 +107,13 @@ async function callService(functionName, extraParams = {}, paramOrder = null) {
 
     return { success: result === 'success', errorNumber: err, message, raw: ri, parsed: ri, requestUrl: url };
   } catch (e) {
+    const isTimeout = (e && (e.name === 'AbortError' || String(e).toLowerCase().includes('timeout')));
     if (getDebugFlag && getDebugFlag()) logError && logError(`[RRService] Error calling ${functionName}:`, e && e.stack ? e.stack : e);
-    return { success: false, errorNumber: 100, message: String(e), requestUrl: url };
+    if (isTimeout) {
+      // Show a system modal and redirect to Login when user taps OK
+      try { handleApiTimeout(); } catch (err) { /* ignore */ }
+    }
+    return { success: false, errorNumber: isTimeout ? 408 : 100, message: isTimeout ? 'Request timed out' : String(e), requestUrl: url };
   }
 }
 
@@ -169,20 +176,92 @@ export async function GetDashboard() {
   if (!r.success) return r;
 
   const sel = r.parsed?.Selections || {};
+  
+  // The XML parser is nesting TotalDOV, Introduction, etc. inside Task structure
+  // We need to extract them from wherever they ended up
+  // Helper function to recursively search for a value in nested objects
+  const findValue = (obj, key) => {
+    if (!obj || typeof obj !== 'object') return undefined;
+    if (obj[key] !== undefined) return obj[key];
+    for (const k in obj) {
+      if (k === key) return obj[k];
+      const found = findValue(obj[k], key);
+      if (found !== undefined) return found;
+    }
+    return undefined;
+  };
+  
+  // Extract values - try direct access first, then search nested structure
+  const totalDOV = sel?.TotalDOV ?? findValue(sel, 'TotalDOV');
+  const introduction = sel?.Introduction ?? findValue(sel, 'Introduction');
+  const referral = sel?.Referral ?? findValue(sel, 'Referral');
+  const partner = sel?.Partner ?? findValue(sel, 'Partner');
+  const dovElements = sel?.DOV ?? findValue(sel, 'DOV');
+  
+  // Extract chart data arrays
+  let dovChartData = [];
+  if (dovElements) {
+    const dovArray = Array.isArray(dovElements) ? dovElements : [dovElements];
+    dovChartData = dovArray.map(dov => {
+      const count = dov?.Count || dov?.count || 0;
+      return typeof count === 'number' ? count : Number(count) || 0;
+    });
+  } else if (sel?.DOVChart) {
+    const dovChart = Array.isArray(sel.DOVChart) ? sel.DOVChart : [sel.DOVChart];
+    dovChartData = dovChart.map(item => {
+      const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
+      return typeof val === 'number' ? val : Number(val) || 0;
+    });
+  } else if (sel?.dovChartData) {
+    const arr = Array.isArray(sel.dovChartData) ? sel.dovChartData : [sel.dovChartData];
+    dovChartData = arr.map(v => typeof v === 'number' ? v : Number(v) || 0);
+  }
+  
+  // Revenue Chart: expects array of numbers from RevenueChart or revenueChartData
+  let revenueChartData = [];
+  if (sel?.RevenueChart) {
+    const revChart = Array.isArray(sel.RevenueChart) ? sel.RevenueChart : [sel.RevenueChart];
+    revenueChartData = revChart.map(item => {
+      const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
+      return typeof val === 'number' ? val : Number(val) || 0;
+    });
+  } else if (sel?.revenueChartData) {
+    const arr = Array.isArray(sel.revenueChartData) ? sel.revenueChartData : [sel.revenueChartData];
+    revenueChartData = arr.map(v => typeof v === 'number' ? v : Number(v) || 0);
+  }
+  
   // Map a compact JS object expected by UI
   const data = {
     bestPartner: sel?.BestPartner || null,
     current: sel?.Current || null,
     recent: sel?.Recent || null,
     tasksSummary: Array.isArray(sel?.Task) ? sel.Task.map(t => ({ name: t.TaskName, date: t.Date })) : (sel?.Task ? [{ name: sel.Task.TaskName, date: sel.Task.Date }] : []),
-    dovTotal: sel?.TotalDOV || sel?.dovTotal || null,
+    // Extract and convert values (handle nested structure from XML parser)
+    dovTotal: totalDOV !== undefined && totalDOV !== null ? Number(totalDOV) : null,
     outcomes: {
-      introductions: sel?.Introduction || 0,
-      referrals: sel?.Referral || 0,
-      partners: sel?.Partner || 0,
-    }
+      introductions: introduction !== undefined && introduction !== null ? Number(introduction) : 0,
+      referrals: referral !== undefined && referral !== null ? Number(referral) : 0,
+      partners: partner !== undefined && partner !== null ? Number(partner) : 0,
+    },
+    dovChartData: dovChartData.length > 0 ? dovChartData : null,
+    revenueChartData: revenueChartData.length > 0 ? revenueChartData : null,
   };
+  
   return { success: true, data };
+}
+
+export async function GetDOVDateList() {
+  const r = await callService('GetDOVDateList');
+  if (!r.success) return r;
+  const selections = r.parsed?.Selections || {};
+  let dovData = [];
+  if (selections?.DOV) {
+    const as = Array.isArray(selections.DOV) ? selections.DOV : [selections.DOV];
+    dovData = as.map(d => ({ name: d?.Name || '', count: Number(d?.Count) || 0 }));
+  }
+  // Extract just the count values for the chart
+  const chartData = dovData.map(d => d.count);
+  return { success: true, dovData, chartData };
 }
 
 export async function GetTaskList() {
@@ -239,4 +318,48 @@ export async function GetHelp({ topic }) {
 
 export async function UpdateFeedback({ Name, Email, Phone, Response, Update, Comment }) {
   return callService('UpdateFeedback', { Name, Email, Phone, Response, Update, Comment });
+}
+
+// RHCM 11/21/25 - fetch wrapper with timeout support.
+// Usage: `const res = await fetchWithTimeout(url, opts, timeoutMs);`
+// If the environment supports AbortController, it will abort the request to avoid leaking.
+export async function fetchWithTimeout(url, options = {}, timeout = 15000) {
+  if (!timeout || timeout <= 0) {
+    return fetch(url, options);
+  }
+
+  // Prefer AbortController when available so the underlying request is cancelled.
+  const hasAbort = typeof globalThis.AbortController !== 'undefined';
+  let controller;
+  let timer;
+
+  if (hasAbort) {
+    controller = new AbortController();
+    // If caller already passed a signal, preserve it (do not override)
+    if (!options.signal) options.signal = controller.signal;
+    timer = setTimeout(() => controller.abort(), timeout);
+    try {
+      const res = await fetch(url, options);
+      clearTimeout(timer);
+      return res;
+    } catch (e) {
+      clearTimeout(timer);
+      throw e;
+    }
+  }
+
+  // Fallback: race fetch against a timeout promise
+  const fetchPromise = fetch(url, options);
+  const timeoutPromise = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('Timeout')), timeout);
+  });
+
+  try {
+    const res = await Promise.race([fetchPromise, timeoutPromise]);
+    clearTimeout(timer);
+    return res;
+  } catch (e) {
+    clearTimeout(timer);
+    throw e;
+  }
 }

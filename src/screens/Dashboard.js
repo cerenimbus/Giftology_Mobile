@@ -169,9 +169,14 @@ export default function Dashboard({ navigation }) {
           <View style={styles.pill}><Text>Referrals</Text><Text style={styles.pillNumber}>{safe(outcomes?.referrals)}</Text></View>
         </View>
 
+        <Text style={styles.dovGraphTitle}>Total DOV Activities</Text>
         <View style={styles.dovBox}>
           <View style={styles.dovChartPlaceholder}>
-            <BarChart data={[40, 80, 160, 120, 200]} height={60} color={'#e84b4b'} />
+            <BarChart 
+              data={dashboardData?.dovChartData && dashboardData.dovChartData.length > 0 ? dashboardData.dovChartData : [40, 80, 160, 120, 200]} 
+              height={60} 
+              color={'#e84b4b'} 
+            />
           </View>
           <Text style={styles.dovTotal}>{safe(dashboardData?.dovTotal)}</Text>
         </View>
@@ -262,9 +267,13 @@ export default function Dashboard({ navigation }) {
 
         <View style={styles.revenueBox}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 12, color: '#666' }}>Referral Revenue Generated</Text>
+            <Text style={{ fontSize: 16, color: '#333', fontWeight: '700', marginBottom: 10 }}>Referral Revenue Generated</Text>
             <View style={styles.smallChart}>
-              <BarChart data={[40, 80, 120, 60, 160, 100]} height={44} color={'#e84b4b'} />
+              <BarChart 
+                data={dashboardData?.revenueChartData && dashboardData.revenueChartData.length > 0 ? dashboardData.revenueChartData : [40, 80, 120, 60, 160, 100]} 
+                height={44} 
+                color={'#e84b4b'} 
+              />
             </View>
           </View>
           <Text style={styles.revenueAmount}>$105,000</Text>
@@ -321,9 +330,12 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   scroller: { padding: 20, paddingBottom: 120 },
   page: { padding: 20, paddingBottom: 120, backgroundColor: '#fff' },
-  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 6 },
+  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 25 },
   card: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginTop: 18, shadowColor: '#000', shadowOpacity: 0.04, elevation: 3 },
-  cardTitle: { fontWeight: '700', marginBottom: 12, fontSize: 16 },
+  cardTitle: { fontWeight: '700', marginBottom: 6, fontSize: 16 },
+  graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, marginBottom: 8 },
+  graphTitle: { color: '#999', fontSize: 14 },
+  graphTitleRight: { color: '#999', fontSize: 14, textAlign: 'right' },
   cardTitleSmall: { fontWeight: '700', marginBottom: 12, fontSize: 14, color: '#333' },
   smallRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f6f6f6' },
   partner: { color: '#333' },
@@ -332,7 +344,8 @@ const styles = StyleSheet.create({
   pillsRow: { marginTop: 6 },
   pill: { backgroundColor: '#fdeaea', borderRadius: 12, padding: 10, marginVertical: 6, flexDirection: 'row', justifyContent: 'space-between' },
   pillNumber: { fontWeight: '700' },
-  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
+  dovGraphTitle: { color: '#333', fontSize: 16, marginTop: 12, marginBottom: 6, fontWeight: '700' },
+  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: 6, justifyContent: 'space-between' },
   dovChartPlaceholder: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', height: 60, width: 180, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
   dovTotal: { fontSize: 18, color: '#999', marginLeft: 12 },
   taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#f6f6f6' },
@@ -345,7 +358,7 @@ const styles = StyleSheet.create({
   revenueBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
   smallChart: { height: 44, width: 140, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
   revenueAmount: { fontSize: 22, fontWeight: '700', color: '#999', marginLeft: 12 },
-  menuButton: { position: 'absolute', right: 20, top: 16, padding: 8, backgroundColor: '#fff', borderRadius: 8, elevation: 2, zIndex: 30 },
+  menuButton: { position: 'absolute', right: 20, top: 40, padding: 8, backgroundColor: '#fff', borderRadius: 8, elevation: 2, zIndex: 30 },
   menuOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'flex-start', alignItems: 'flex-end' },
   backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'transparent' },
   menuCard: { width: 300, marginTop: 80, marginRight: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, elevation: 8, shadowColor: '#000', shadowOpacity: 0.08 },

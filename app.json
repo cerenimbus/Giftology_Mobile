@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "RelationshipRadar",
+    "name": "ROR",
     "slug": "relationshipradar",
-    "version": "1.0.1",
+    "version": "1.0.3",
     "platforms": [
       "ios",
       "android",
@@ -41,6 +41,7 @@
           }
         }
       ]
-    ]
+    ],
+    "owner": "cerenimbus"
   }
 }
