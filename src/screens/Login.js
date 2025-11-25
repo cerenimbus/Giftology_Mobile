@@ -6,7 +6,21 @@
  * code) used for device verification; if present we persist it for subsequent calls.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, ScrollView, Alert, Linking } from 'react-native';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TextInput, 
+  TouchableOpacity, 
+  Image, 
+  ScrollView, 
+  Alert, 
+  Linking, 
+  useWindowDimensions, 
+  KeyboardAvoidingView, 
+  Platform,
+  SafeAreaView 
+} from 'react-native';
 import { AuthorizeUser } from '../api';
 import { setAuthCode, getAuthCode } from '../utils/storage';
 import { log, setDebugFlag, getDebugFlag } from '../utils/debug';
@@ -16,6 +30,9 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState();
   const [termsChecked, setTermsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Hook for responsive layout calculations
+  const { width, height } = useWindowDimensions();
 
   useEffect(() => {
     (async () => {
@@ -28,7 +45,7 @@ export default function Login({ navigation }) {
     if (!termsChecked) return;
     setLoading(true);
     try {
-      log('Login: sign-in pressed', { email: email.replace(/(.{2}).+(@.+)/,'$1***$2'), termsChecked });
+      log('Login: sign-in pressed', { email: email?.replace(/(.{2}).+(@.+)/,'$1***$2'), termsChecked });
       const res = await AuthorizeUser({ UserName: email, Password: password, GiftologyVersion: 1, Language: 'EN' });
       // log the response and the request URL used
       log('Login: AuthorizeUser response', res);
@@ -59,46 +76,97 @@ export default function Login({ navigation }) {
     }
   };
 
+  // Responsive Styles Calculation
+  // We limit the max width to 500px for tablets/desktop so inputs don't stretch too wide
+  const contentWidth = width > 600 ? 500 : '100%';
+  const isLandscape = width > height;
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.relationTitle}>Relationship Radar</Text>
-      <Text style={styles.powered}>Powered by:</Text>
-      <Image source={require('../../assets/logo.png')} style={styles.logo} resizeMode="contain" />
-      <Text style={styles.title}>Log in</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'} 
+        style={styles.keyboardView}
+      >
+        <ScrollView 
+          contentContainerStyle={[styles.scrollContainer, { paddingBottom: isLandscape ? 40 : 20 }]}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={[styles.innerContainer, { width: contentWidth }]}>
+            <Text style={styles.relationTitle}>Relationship Radar</Text>
+            <Text style={styles.powered}>Powered by:</Text>
+            
+            <Image 
+              source={require('../../assets/logo.png')} 
+              style={[styles.logo, { height: height * 0.15, maxHeight: 110 }]} 
+              resizeMode="contain" 
+            />
+            
+            <Text style={styles.title}>Log in</Text>
 
-      <Text style={styles.label}>Email address</Text>
-      <TextInput style={styles.input} value={email} onChangeText={setEmail} keyboardType="email-address" />
+            <Text style={styles.label}>Email address</Text>
+            <TextInput 
+              style={styles.input} 
+              value={email} 
+              onChangeText={setEmail} 
+              keyboardType="email-address" 
+              autoCapitalize="none"
+            />
 
-      <Text style={styles.label}>Password</Text>
-      <TextInput style={styles.input} secureTextEntry value={password} onChangeText={setPassword} />
+            <Text style={styles.label}>Password</Text>
+            <TextInput 
+              style={styles.input} 
+              secureTextEntry 
+              value={password} 
+              onChangeText={setPassword} 
+            />
 
-      <View style={styles.row}>
-        <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:8}}>
-          <Text style={styles.checkbox}>{termsChecked ? '☑' : '☐'}</Text>
-        </TouchableOpacity>
-        <Text style={styles.small}>Accept <Text style={{color:'#e84b4b'}} onPress={() => Linking.openURL('https://radar.giftologygroup.com/terms.html')}>Terms</Text> and <Text style={{color:'#e84b4b'}} onPress={() => Linking.openURL('https://radar.giftologygroup.com/privacypolicy.html')}>Privacy Policy</Text></Text>
-      </View>
+            <View style={styles.row}>
+              <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:8}}>
+                <Text style={styles.checkbox}>{termsChecked ? '☑' : '☐'}</Text>
+              </TouchableOpacity>
+              <Text style={styles.small}>
+                Accept <Text style={{color:'#e84b4b'}} onPress={() => Linking.openURL('https://radar.giftologygroup.com/terms.html')}>Terms</Text> and <Text style={{color:'#e84b4b'}} onPress={() => Linking.openURL('https://radar.giftologygroup.com/privacypolicy.html')}>Privacy Policy</Text>
+              </Text>
+            </View>
 
-      <TouchableOpacity disabled={!termsChecked || loading} style={[styles.button, (!termsChecked || loading) && {opacity:0.6}]} onPress={onSignIn}>
-        <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Log in'}</Text>
-      </TouchableOpacity>
+            <TouchableOpacity 
+              disabled={!termsChecked || loading} 
+              style={[styles.button, (!termsChecked || loading) && {opacity:0.6}]} 
+              onPress={onSignIn}
+            >
+              <Text style={styles.buttonText}>{loading ? 'Signing in...' : 'Log in'}</Text>
+            </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>
-        <Text style={styles.forgot}>Forgot password?</Text>
-      </TouchableOpacity>
-    </ScrollView>
+            <TouchableOpacity onPress={() => navigation.navigate('Forgot')}>
+              <Text style={styles.forgot}>Forgot password?</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
+  safeArea: {
+    flex: 1,
     backgroundColor: '#fff',
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContainer: {
     flexGrow: 1,
+    justifyContent: 'center',
+    alignItems: 'center', // Centers content horizontally for large screens
+    padding: 20,
+  },
+  innerContainer: {
+    // Width is handled dynamically in render
+    alignSelf: 'center',
   },
   logo: {
     width: '85%',
-    height: 110,
     alignSelf: 'center',
     marginTop: 20,
   },
@@ -130,17 +198,37 @@ const styles = StyleSheet.create({
     borderColor: '#e6e6e6',
     borderRadius: 12,
     padding: 14,
+    width: '100%',
   },
-  row: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-  checkbox: { fontSize: 18, marginRight: 8 },
-  small: { color: '#333' },
+  row: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    marginTop: 12,
+    flexWrap: 'wrap', // Allows text to wrap on very small screens
+  },
+  checkbox: { 
+    fontSize: 18, 
+    marginRight: 8 
+  },
+  small: { 
+    color: '#333',
+    flex: 1, // Ensures text takes up remaining space
+  },
   button: {
     backgroundColor: '#e84b4b',
     padding: 16,
     borderRadius: 18,
     alignItems: 'center',
     marginTop: 20,
+    width: '100%',
   },
-  buttonText: { color: '#fff', fontWeight: '700' },
-  forgot: { textAlign: 'center', marginTop: 12, color: '#666' },
+  buttonText: { 
+    color: '#fff', 
+    fontWeight: '700' 
+  },
+  forgot: { 
+    textAlign: 'center', 
+    marginTop: 12, 
+    color: '#666' 
+  },
 });
