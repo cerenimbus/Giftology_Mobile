@@ -3,10 +3,15 @@
  * Simple feedback form which posts free-text comments to UpdateFeedback.
  */
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
 import { BackIcon } from '../components/Icons';
 import { UpdateFeedback } from '../api';
 import { log } from '../utils/debug';
+
+const { width, height } = Dimensions.get('window');
+const isTablet = width >= 768;
+const scale = isTablet ? Math.min(width / 375, 1.5) : width / 375; // Cap scale for tablets
+const maxCardWidth = isTablet ? 600 : width * 0.95; // Limit card width on tablets
 
 export default function Feedback({ navigation }){
   const [name, setName] = useState('');
@@ -30,8 +35,8 @@ export default function Feedback({ navigation }){
     try {
       log('Feedback: submitting', { name, email: email ? email.replace(/(.{2}).+(@.+)/,'$1***$2') : '', phone });
       const res = await UpdateFeedback({ Name: name, Email: email, Phone: phone, Comment: comment, Response: 0, Update: 0 });
-  log('Feedback: response', res);
-  if (res?.requestUrl) { try { log('Feedback: UpdateFeedback URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Feedback: UpdateFeedback URL (full):', res.requestUrl); } catch(e){} }
+      log('Feedback: response', res);
+      if (res?.requestUrl) { try { log('Feedback: UpdateFeedback URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Feedback: UpdateFeedback URL (full):', res.requestUrl); } catch(e){} }
       if (res?.success) {
         navigation.navigate('Main');
       } else {
@@ -45,38 +50,113 @@ export default function Feedback({ navigation }){
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-        <BackIcon size={28} color="#666" />
-      </TouchableOpacity>
-      <Text style={styles.title}>Feedback</Text>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <BackIcon size={28 * scale} color="#666" />
+        </TouchableOpacity>
+        <Text style={styles.title}>Feedback</Text>
+      </View>
       <View style={styles.card}>
         <TextInput value={name} onChangeText={setName} style={styles.input} placeholder="Name" />
         <TextInput value={email} onChangeText={setEmail} style={styles.input} placeholder="Email" keyboardType="email-address" autoCapitalize="none" />
         <TextInput value={phone} onChangeText={setPhone} style={styles.input} placeholder="Phone" />
 
-        <View style={{flexDirection:'row',alignItems:'center',marginTop:12}}>
-          <Text style={{fontSize:20,marginRight:8}}>☐</Text>
-          <Text>I would like a response.</Text>
+        <View style={styles.checkboxRow}>
+          <Text style={styles.checkboxIcon}>☐</Text>
+          <Text style={styles.checkboxText}>I would like a response.</Text>
         </View>
-        <View style={{flexDirection:'row',alignItems:'center',marginTop:8}}>
-          <Text style={{fontSize:20,marginRight:8}}>☐</Text>
-          <Text>Email me about updates.</Text>
+        <View style={styles.checkboxRow}>
+          <Text style={styles.checkboxIcon}>☐</Text>
+          <Text style={styles.checkboxText}>Email me about updates.</Text>
         </View>
 
-        <TextInput value={comment} onChangeText={setComment} style={[styles.input,{height:220,marginTop:16,textAlignVertical:'top'}]} placeholder="" multiline />
+        <TextInput value={comment} onChangeText={setComment} style={styles.commentInput} placeholder="" multiline />
 
-        <TouchableOpacity disabled={!comment || loading} style={[styles.button, (!comment || loading) && {opacity:0.6}]} onPress={onSubmit}><Text style={{color:'#fff',fontWeight:'700'}}>{loading ? 'Submitting...' : 'Submit'}</Text></TouchableOpacity>
+        <TouchableOpacity disabled={!comment || loading} style={[styles.button, (!comment || loading) && styles.buttonDisabled]} onPress={onSubmit}>
+          <Text style={styles.buttonText}>{loading ? 'Submitting...' : 'Submit'}</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container:{padding:20,paddingBottom:120,backgroundColor:'#fff'},
-  backButton:{padding:6,marginTop:20,marginBottom:4,alignSelf:'flex-start'},
-  title:{fontSize:36,color:'#e84b4b',fontWeight:'700'},
-  card:{backgroundColor:'#fff',padding:12,marginTop:12,borderRadius:12},
-  input:{borderWidth:1,borderColor:'#e6e6e6',borderRadius:12,padding:14,marginTop:8},
-  button:{backgroundColor:'#e84b4b',padding:16,borderRadius:12,alignItems:'center',marginTop:16},
-  tabBar:{position:'absolute',left:0,right:0,bottom:0,height:70,backgroundColor:'#fff',flexDirection:'row',justifyContent:'space-around',alignItems:'center',borderTopWidth:1,borderColor:'#f0f0f0'}
+  container: {
+    padding: width * 0.05,
+    paddingBottom: height * 0.15,
+    backgroundColor: '#fff',
+    flexGrow: 1,
+    alignItems: isTablet ? 'center' : 'stretch'
+  },
+  header: {
+    width: '100%',
+    maxWidth: maxCardWidth,
+    alignSelf: isTablet ? 'center' : 'stretch'
+  },
+  backButton: {
+    padding: 6 * scale,
+    marginTop: 6 * scale,
+    marginBottom: 4 * scale,
+    alignSelf: 'flex-start'
+  },
+  title: {
+    fontSize: 36 * scale,
+    color: '#e84b4b',
+    fontWeight: '700',
+    marginTop: 4 * scale
+  },
+  card: {
+    backgroundColor: '#fff',
+    padding: width * 0.03,
+    marginTop: width * 0.03,
+    borderRadius: 12,
+    width: '100%',
+    maxWidth: maxCardWidth,
+    alignSelf: isTablet ? 'center' : 'stretch'
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e6e6e6',
+    borderRadius: 12,
+    padding: 14 * scale,
+    marginTop: 8 * scale,
+    fontSize: 16 * scale
+  },
+  checkboxRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12 * scale
+  },
+  checkboxIcon: {
+    fontSize: 20 * scale,
+    marginRight: 8 * scale
+  },
+  checkboxText: {
+    fontSize: 16 * scale
+  },
+  commentInput: {
+    borderWidth: 1,
+    borderColor: '#e6e6e6',
+    borderRadius: 12,
+    padding: 14 * scale,
+    marginTop: 16 * scale,
+    textAlignVertical: 'top',
+    height: height * 0.25,
+    fontSize: 16 * scale
+  },
+  button: {
+    backgroundColor: '#e84b4b',
+    padding: 16 * scale,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 16 * scale
+  },
+  buttonDisabled: {
+    opacity: 0.6
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '700',
+    fontSize: 16 * scale
+  }
 });
