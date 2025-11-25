@@ -3,9 +3,33 @@
  * Lists potential partners retrieved from GetDashboard (combines BestPartner, Current, Recent).
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { GetDashboard } from '../api';
 import { log } from '../utils/debug';
+
+// Improved responsive scaling with tablet support
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const BASE_WIDTH = 375; // iPhone base width
+
+// Moderate scale - less aggressive scaling for tablets
+const moderateScale = (size, factor = 0.5) => {
+  const scale = SCREEN_WIDTH / BASE_WIDTH;
+  return size + (scale - 1) * size * factor;
+};
+
+// Font scale with maximum cap for tablets
+const fontScale = (size) => {
+  const scaled = moderateScale(size, 0.3); // Even less aggressive for fonts
+  const maxSize = size * 1.5; // Cap at 150% of original size
+  return Math.min(scaled, maxSize);
+};
+
+// Spacing scale with maximum cap
+const spacingScale = (size) => {
+  const scaled = moderateScale(size, 0.4);
+  const maxSize = size * 1.8; // Cap at 180% of original
+  return Math.min(scaled, maxSize);
+};
 
 export default function Contacts({ navigation }){
   const [contacts, setContacts] = useState([]);
@@ -86,8 +110,8 @@ export default function Contacts({ navigation }){
  
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={{marginTop:20,marginLeft:12}} onPress={() => navigation.goBack()}>
-        <Text style={{color:'#666'}}>← Back</Text>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+        <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
       <Text style={styles.title}>Contacts</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
@@ -115,17 +139,89 @@ export default function Contacts({ navigation }){
 }
 
 const styles = StyleSheet.create({
-  container:{flex:1,backgroundColor:'#fff'},
-  title:{fontSize:36,color:'#e84b4b',fontWeight:'700',margin:20},
-  scrollView:{flex:1},
-  scrollContent:{paddingBottom:20},
-  table:{backgroundColor:'#fff',margin:12,borderRadius:12,padding:8,elevation:1,shadowColor:'#000',shadowOpacity:0.03},
-  row:{flexDirection:'row',justifyContent:'space-between',borderBottomWidth:1,borderColor:'#f0f0f0',paddingVertical:18,paddingHorizontal:6},
-  headerRow:{borderBottomWidth:1,borderColor:'#eee',paddingVertical:12},
-  headerText:{fontWeight:'700'},
-  name:{fontSize:16,flex:1},
-  status:{fontSize:16,flex:1,textAlign:'center'},
-  phone:{fontSize:16,color:'#555',flex:1,textAlign:'right'},
-  emptyText:{padding:20,textAlign:'center',color:'#999'},
-  tabBar:{position:'absolute',left:0,right:0,bottom:0,height:70,backgroundColor:'#fff',flexDirection:'row',justifyContent:'space-around',alignItems:'center',borderTopWidth:1,borderColor:'#f0f0f0'}
+  container: {
+    flex: 1,
+    backgroundColor: '#fff'
+  },
+  backButton: {
+    marginTop: spacingScale(20),
+    marginLeft: spacingScale(12),
+    padding: spacingScale(8)
+  },
+  backText: {
+    color: '#666',
+    fontSize: fontScale(14)
+  },
+  title: {
+    fontSize: fontScale(36),
+    color: '#e84b4b',
+    fontWeight: '700',
+    margin: spacingScale(20)
+  },
+  scrollView: {
+    flex: 1
+  },
+  scrollContent: {
+    paddingBottom: spacingScale(20)
+  },
+  table: {
+    backgroundColor: '#fff',
+    margin: spacingScale(12),
+    borderRadius: moderateScale(12, 0.3),
+    padding: spacingScale(8),
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.03
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderColor: '#f0f0f0',
+    paddingVertical: spacingScale(18),
+    paddingHorizontal: spacingScale(6)
+  },
+  headerRow: {
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+    paddingVertical: spacingScale(12)
+  },
+  headerText: {
+    fontWeight: '700',
+    fontSize: fontScale(16)
+  },
+  name: {
+    fontSize: fontScale(16),
+    flex: 1
+  },
+  status: {
+    fontSize: fontScale(16),
+    flex: 1,
+    textAlign: 'center'
+  },
+  phone: {
+    fontSize: fontScale(16),
+    color: '#555',
+    flex: 1,
+    textAlign: 'right'
+  },
+  emptyText: {
+    padding: spacingScale(20),
+    textAlign: 'center',
+    color: '#999',
+    fontSize: fontScale(14)
+  },
+  tabBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: spacingScale(70),
+    backgroundColor: '#fff',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderColor: '#f0f0f0'
+  }
 });
