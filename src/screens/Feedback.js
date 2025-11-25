@@ -8,10 +8,10 @@ import { BackIcon } from '../components/Icons';
 import { UpdateFeedback } from '../api';
 import { log } from '../utils/debug';
 
-const { width, height } = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 const isTablet = width >= 768;
 const scale = isTablet ? Math.min(width / 375, 1.5) : width / 375; // Cap scale for tablets
-const maxCardWidth = isTablet ? 600 : width * 0.95; // Limit card width on tablets
+const maxCardWidth = isTablet ? width * 0.6 : width * 0.95; // Limit card width on tablets
 
 export default function Feedback({ navigation }){
   const [name, setName] = useState('');
@@ -83,7 +83,7 @@ export default function Feedback({ navigation }){
 const styles = StyleSheet.create({
   container: {
     padding: width * 0.05,
-    paddingBottom: height * 0.15,
+    paddingBottom: width * 0.15,
     backgroundColor: '#fff',
     flexGrow: 1,
     alignItems: isTablet ? 'center' : 'stretch'
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: width * 0.03,
     marginTop: width * 0.03,
-    borderRadius: 12,
+    borderRadius: 12 * scale,
     width: '100%',
     maxWidth: maxCardWidth,
     alignSelf: isTablet ? 'center' : 'stretch'
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#e6e6e6',
-    borderRadius: 12,
+    borderRadius: 12 * scale,
     padding: 14 * scale,
     marginTop: 8 * scale,
     fontSize: 16 * scale
@@ -137,17 +137,17 @@ const styles = StyleSheet.create({
   commentInput: {
     borderWidth: 1,
     borderColor: '#e6e6e6',
-    borderRadius: 12,
+    borderRadius: 12 * scale,
     padding: 14 * scale,
     marginTop: 16 * scale,
     textAlignVertical: 'top',
-    height: height * 0.25,
+    minHeight: width * 0.6,
     fontSize: 16 * scale
   },
   button: {
     backgroundColor: '#e84b4b',
     padding: 16 * scale,
-    borderRadius: 12,
+    borderRadius: 12 * scale,
     alignItems: 'center',
     marginTop: 16 * scale
   },
