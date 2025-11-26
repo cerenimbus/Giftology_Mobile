@@ -6,6 +6,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Animated, Easing } from 'react-native';
 import { HamburgerIcon, BackIcon } from '../components/Icons';
+import { fontSize, scale, verticalScale, moderateScale, SCREEN } from '../utils/responsive';
 import BarChart from '../components/BarChart';
 import { GetTaskList, UpdateTask, GetDashboard } from '../api';
 import { log } from '../utils/debug';
@@ -189,7 +190,7 @@ export default function Dashboard({ navigation }) {
       {/* Task list card (shows dashboard summary first, then full task list fallback) */}
       <View style={styles.card}>
         <Text style={styles.cardTitleSmall}>Task</Text>
-        {loading && <ActivityIndicator style={{ marginVertical: 12 }} />}
+        {loading && <ActivityIndicator style={{ marginVertical: verticalScale(12) }} />}
 
         {(() => {
           // 🔹 Prefer Dashboard summary tasks → fallback to GetTaskList
@@ -267,7 +268,7 @@ export default function Dashboard({ navigation }) {
 
         <View style={styles.revenueBox}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 16, color: '#333', fontWeight: '700', marginBottom: 10 }}>Referral Revenue Generated</Text>
+            <Text style={{ fontSize: fontSize(14), color: '#333', fontWeight: '700', marginBottom: verticalScale(10) }}>Referral Revenue Generated</Text>
             <View style={styles.smallChart}>
               <BarChart 
                 data={dashboardData?.revenueChartData && dashboardData.revenueChartData.length > 0 ? dashboardData.revenueChartData : [40, 80, 120, 60, 160, 100]} 
@@ -280,7 +281,7 @@ export default function Dashboard({ navigation }) {
         </View>
       </View>
 
-      <View style={{ height: 40 }} />
+      <View style={{ height: verticalScale(40) }} />
       </ScrollView>
 
       {menuOpen && (
@@ -328,42 +329,42 @@ export default function Dashboard({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scroller: { padding: 20, paddingBottom: 120 },
-  page: { padding: 20, paddingBottom: 120, backgroundColor: '#fff' },
-  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 25 },
-  card: { backgroundColor: '#fff', borderRadius: 16, padding: 14, marginTop: 18, shadowColor: '#000', shadowOpacity: 0.04, elevation: 3 },
-  cardTitle: { fontWeight: '700', marginBottom: 6, fontSize: 16 },
-  graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6, marginBottom: 8 },
-  graphTitle: { color: '#999', fontSize: 14 },
-  graphTitleRight: { color: '#999', fontSize: 14, textAlign: 'right' },
-  cardTitleSmall: { fontWeight: '700', marginBottom: 12, fontSize: 14, color: '#333' },
-  smallRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  scroller: { padding: moderateScale(18), paddingBottom: moderateScale(120) },
+  page: { padding: moderateScale(18), paddingBottom: moderateScale(120), backgroundColor: '#fff' },
+  title: { fontSize: fontSize(28), color: '#e84b4b', fontWeight: '700', marginTop: verticalScale(18) },
+  card: { backgroundColor: '#fff', borderRadius: moderateScale(14), padding: moderateScale(12), marginTop: verticalScale(16), shadowColor: '#000', shadowOpacity: 0.04, elevation: 3 },
+  cardTitle: { fontWeight: '700', marginBottom: verticalScale(6), fontSize: fontSize(14) },
+  graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: verticalScale(6), marginBottom: verticalScale(8) },
+  graphTitle: { color: '#999', fontSize: fontSize(12) },
+  graphTitleRight: { color: '#999', fontSize: fontSize(12), textAlign: 'right' },
+  cardTitleSmall: { fontWeight: '700', marginBottom: verticalScale(10), fontSize: fontSize(12), color: '#333' },
+  smallRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(8), borderBottomWidth: 1, borderColor: '#f6f6f6' },
   partner: { color: '#333' },
   partnerAmount: { color: '#111', fontWeight: '700' },
   phone: { color: '#666' },
-  pillsRow: { marginTop: 6 },
-  pill: { backgroundColor: '#fdeaea', borderRadius: 12, padding: 10, marginVertical: 6, flexDirection: 'row', justifyContent: 'space-between' },
+  pillsRow: { marginTop: verticalScale(6) },
+  pill: { backgroundColor: '#fdeaea', borderRadius: moderateScale(10), padding: moderateScale(8), marginVertical: verticalScale(6), flexDirection: 'row', justifyContent: 'space-between' },
   pillNumber: { fontWeight: '700' },
-  dovGraphTitle: { color: '#333', fontSize: 16, marginTop: 12, marginBottom: 6, fontWeight: '700' },
-  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: 6, justifyContent: 'space-between' },
-  dovChartPlaceholder: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', height: 60, width: 180, justifyContent: 'center', alignItems: 'center', borderRadius: 8 },
-  dovTotal: { fontSize: 18, color: '#999', marginLeft: 12 },
-  taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#f6f6f6' },
-  checkbox: { width: 28, color: '#999' },
+  dovGraphTitle: { color: '#333', fontSize: fontSize(14), marginTop: verticalScale(10), marginBottom: verticalScale(6), fontWeight: '700' },
+  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(6), justifyContent: 'space-between' },
+  dovChartPlaceholder: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', height: verticalScale(60), width: Math.min(scale(180), SCREEN.WIDTH * 0.45), justifyContent: 'center', alignItems: 'center', borderRadius: moderateScale(8) },
+  dovTotal: { fontSize: fontSize(16), color: '#999', marginLeft: moderateScale(10) },
+  taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: verticalScale(10), borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  checkbox: { width: moderateScale(28), color: '#999' },
   taskMain: { flex: 1 },
-  taskName: { fontSize: 16 },
+  taskName: { fontSize: fontSize(14) },
   taskDate: { color: '#999' },
-  outcomesRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#f6f6f6' },
-  outcomeNumber: { fontWeight: '700', fontSize: 18 },
-  revenueBox: { flexDirection: 'row', alignItems: 'center', marginTop: 12, justifyContent: 'space-between' },
-  smallChart: { height: 44, width: 140, backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', borderRadius: 8, justifyContent: 'center', alignItems: 'center' },
-  revenueAmount: { fontSize: 22, fontWeight: '700', color: '#999', marginLeft: 12 },
-  menuButton: { position: 'absolute', right: 20, top: 40, padding: 8, backgroundColor: '#fff', borderRadius: 8, elevation: 2, zIndex: 30 },
+  outcomesRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(10), borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  outcomeNumber: { fontWeight: '700', fontSize: fontSize(16) },
+  revenueBox: { flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(12), justifyContent: 'space-between' },
+  smallChart: { height: verticalScale(44), width: Math.min(scale(140), SCREEN.WIDTH * 0.35), backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', borderRadius: moderateScale(8), justifyContent: 'center', alignItems: 'center' },
+  revenueAmount: { fontSize: fontSize(18), fontWeight: '700', color: '#999', marginLeft: moderateScale(10) },
+  menuButton: { position: 'absolute', right: moderateScale(16), top: verticalScale(12), padding: moderateScale(8), backgroundColor: '#fff', borderRadius: moderateScale(8), elevation: 2, zIndex: 30 },
   menuOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'flex-start', alignItems: 'flex-end' },
   backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'transparent' },
-  menuCard: { width: 300, marginTop: 80, marginRight: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, elevation: 8, shadowColor: '#000', shadowOpacity: 0.08 },
-  menuClose: { alignSelf: 'flex-end', padding: 6 },
-  menuItem: { paddingVertical: 12 },
-  menuText: { fontSize: 16 },
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 6 },
+  menuCard: { width: Math.min(scale(300), SCREEN.WIDTH * 0.75), marginTop: verticalScale(80), marginRight: moderateScale(12), backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(12), elevation: 8, shadowColor: '#000', shadowOpacity: 0.08 },
+  menuClose: { alignSelf: 'flex-end', padding: moderateScale(6) },
+  menuItem: { paddingVertical: verticalScale(10) },
+  menuText: { fontSize: fontSize(14) },
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: verticalScale(6) },
 });

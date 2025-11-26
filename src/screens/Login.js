@@ -24,6 +24,7 @@ import {
 import { AuthorizeUser } from '../api';
 import { setAuthCode, getAuthCode } from '../utils/storage';
 import { log, setDebugFlag, getDebugFlag } from '../utils/debug';
+import { fontSize, scale, verticalScale, moderateScale } from '../utils/responsive';
 
 export default function Login({ navigation }) {
   const [email, setEmail] = useState();
@@ -78,7 +79,7 @@ export default function Login({ navigation }) {
 
   // Responsive Styles Calculation
   // We limit the max width to 500px for tablets/desktop so inputs don't stretch too wide
-  const contentWidth = width > 600 ? 500 : '100%';
+  const contentWidth = width > 600 ? Math.min(500, width * 0.8) : '100%';
   const isLandscape = width > height;
 
   return (
@@ -97,7 +98,7 @@ export default function Login({ navigation }) {
             
             <Image 
               source={require('../../assets/logo.png')} 
-              style={[styles.logo, { height: height * 0.15, maxHeight: 110 }]} 
+              style={[styles.logo, { height: Math.min(verticalScale(110), height * 0.18) }]} 
               resizeMode="contain" 
             />
             
@@ -121,7 +122,7 @@ export default function Login({ navigation }) {
             />
 
             <View style={styles.row}>
-              <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:8}}>
+              <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:moderateScale(8)}}>
                 <Text style={styles.checkbox}>{termsChecked ? '☑' : '☐'}</Text>
               </TouchableOpacity>
               <Text style={styles.small}>
@@ -159,7 +160,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center', // Centers content horizontally for large screens
-    padding: 20,
+    padding: moderateScale(18),
   },
   innerContainer: {
     // Width is handled dynamically in render
@@ -168,47 +169,47 @@ const styles = StyleSheet.create({
   logo: {
     width: '85%',
     alignSelf: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(18),
   },
   title: {
-    fontSize: 40,
+    fontSize: fontSize(32),
     color: '#e84b4b',
     fontWeight: '700',
-    marginTop: 20,
+    marginTop: verticalScale(12),
   },
   relationTitle: {
-    fontSize: 14,
+    fontSize: fontSize(12),
     color: '#222',
-    marginTop: 6,
-    marginLeft: 2,
+    marginTop: verticalScale(4),
+    marginLeft: moderateScale(2),
   },
   powered: {
-    fontSize: 12,
+    fontSize: fontSize(10),
     color: '#444',
-    marginTop: 4,
-    marginLeft: 2,
+    marginTop: verticalScale(3),
+    marginLeft: moderateScale(2),
   },
   label: {
-    marginTop: 18,
+    marginTop: verticalScale(12),
     color: '#333',
   },
   input: {
-    marginTop: 8,
+    marginTop: verticalScale(8),
     borderWidth: 1,
     borderColor: '#e6e6e6',
-    borderRadius: 12,
-    padding: 14,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
     width: '100%',
   },
   row: { 
     flexDirection: 'row', 
     alignItems: 'center', 
-    marginTop: 12,
+    marginTop: verticalScale(12),
     flexWrap: 'wrap', // Allows text to wrap on very small screens
   },
   checkbox: { 
-    fontSize: 18, 
-    marginRight: 8 
+    fontSize: fontSize(18), 
+    marginRight: moderateScale(8) 
   },
   small: { 
     color: '#333',
@@ -216,10 +217,10 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#e84b4b',
-    padding: 16,
-    borderRadius: 18,
+    padding: moderateScale(14),
+    borderRadius: moderateScale(14),
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: verticalScale(20),
     width: '100%',
   },
   buttonText: { 
@@ -228,7 +229,7 @@ const styles = StyleSheet.create({
   },
   forgot: { 
     textAlign: 'center', 
-    marginTop: 12, 
+    marginTop: verticalScale(10), 
     color: '#666' 
   },
 });

@@ -7,7 +7,10 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "install-hooks": "node ./scripts/install-git-hooks.js",
+    "log-pull": "node ./scripts/log-pull.js",
+    "git:pull-logged": "git pull && node ./scripts/log-pull.js"
   },
   "dependencies": {
     "@react-native-async-storage/async-storage": "2.2.0",

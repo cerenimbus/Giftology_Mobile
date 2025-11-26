@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import { ResetPassword } from '../api';
+import { scale, verticalScale, moderateScale, fontSize } from '../utils/responsive';
 import { log } from '../utils/debug';
 
 export default function Forgot({ navigation }){
@@ -54,9 +55,9 @@ export default function Forgot({ navigation }){
 }
 
 const styles = StyleSheet.create({
-  container:{flex:1,padding:20,backgroundColor:'#fff'},
-  logo:{width:'85%',height:110,alignSelf:'center',marginTop:8},
-  title:{fontSize:36,color:'#e84b4b',fontWeight:'700',marginTop:8},
-  input:{marginTop:12,borderWidth:1,borderColor:'#e6e6e6',borderRadius:12,padding:14},
-  button:{backgroundColor:'#e84b4b',padding:16,borderRadius:18,alignItems:'center',marginTop:20}
+  container:{flex:1,padding:moderateScale(20),backgroundColor:'#fff'},
+  logo:{width:'85%',height:verticalScale(110),alignSelf:'center',marginTop:verticalScale(8)},
+  title:{fontSize:fontSize(28),color:'#e84b4b',fontWeight:'700',marginTop:verticalScale(8)},
+  input:{marginTop:verticalScale(12),borderWidth:1,borderColor:'#e6e6e6',borderRadius:moderateScale(12),padding:moderateScale(12)},
+  button:{backgroundColor:'#e84b4b',padding:moderateScale(14),borderRadius:moderateScale(18),alignItems:'center',marginTop:verticalScale(20)}
 });

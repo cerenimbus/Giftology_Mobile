@@ -6,6 +6,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { GetDashboard } from '../api';
+import { fontSize, scale, verticalScale, moderateScale } from '../utils/responsive';
 import { log } from '../utils/debug';
 
 export default function Task({ navigation }) {
@@ -136,7 +137,7 @@ export default function Task({ navigation }) {
         {/* <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
           <HamburgerIcon size={22} color="#333" />
         </TouchableOpacity> */}
-      <TouchableOpacity style={{ position: 'absolute', left: 18, top: 24, padding: 8 }} onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={{ position: 'absolute', left: moderateScale(12), top: verticalScale(12), padding: moderateScale(6) }} onPress={() => navigation.goBack()}>
       <Text style={{ color: '#e84b4b' }}>← Back</Text>
       </TouchableOpacity>
         <Text style={styles.title}>Task</Text>
@@ -146,7 +147,7 @@ export default function Task({ navigation }) {
         */}
 
         {/* Tasks Card */}
-        <TouchableOpacity style={[styles.card, { marginTop: 16 }]} onPress={() => navigation.navigate('Task')}>
+        <TouchableOpacity style={[styles.card, { marginTop: verticalScale(16) }]} onPress={() => navigation.navigate('Task')}>
 
           {(data?.tasksSummary || []).slice(0, 4).map((t, i) => {
             // Some servers return nested structure like t.name = { '#text': 'James' }
@@ -168,7 +169,7 @@ export default function Task({ navigation }) {
                 <Text numberOfLines={1} style={{ flex: 1 }}>
                   {task.name}
                 </Text>
-                <Text style={{ color: '#999', marginLeft: 8 }}>{task.date}</Text>
+                <Text style={{ color: '#999', marginLeft: moderateScale(8) }}>{task.date}</Text>
               </View>
             ))
           ) : (
@@ -187,17 +188,17 @@ export default function Task({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scroller: { padding: 20, paddingBottom: 120 },
-  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 10 },
-  card: { backgroundColor: '#fff', padding: 16, borderRadius: 14, marginTop: 16, shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
-  cardTitle: { fontWeight: '700', marginBottom: 12, fontSize: 16 },
-  rowSpace: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, alignItems: 'center' },
-  pill: { backgroundColor: '#fdeaea', borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  big: { fontSize: 20, fontWeight: '700' },
-  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 8 },
-  metricItem: { width: '50%', paddingVertical: 12, alignItems: 'center' },
-  metricValue: { fontSize: 24, fontWeight: '700', color: '#e84b4b' },
-  metricLabel: { fontSize: 12, color: '#666', marginTop: 4 },
-  tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 70, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#f0f0f0' },
+  scroller: { padding: moderateScale(18), paddingBottom: moderateScale(120) },
+  title: { fontSize: fontSize(28), color: '#e84b4b', fontWeight: '700', marginTop: verticalScale(6) },
+  card: { backgroundColor: '#fff', padding: moderateScale(12), borderRadius: moderateScale(12), marginTop: verticalScale(12), shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
+  cardTitle: { fontWeight: '700', marginBottom: verticalScale(10), fontSize: fontSize(14) },
+  rowSpace: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(8), alignItems: 'center' },
+  pill: { backgroundColor: '#fdeaea', borderRadius: moderateScale(8), padding: moderateScale(8), flexDirection: 'row', justifyContent: 'space-between', marginTop: verticalScale(8) },
+  big: { fontSize: fontSize(18), fontWeight: '700' },
+  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: verticalScale(8) },
+  metricItem: { width: '50%', paddingVertical: verticalScale(8), alignItems: 'center' },
+  metricValue: { fontSize: fontSize(20), fontWeight: '700', color: '#e84b4b' },
+  metricLabel: { fontSize: fontSize(12), color: '#666', marginTop: verticalScale(4) },
+  tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: verticalScale(70), backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#f0f0f0' },
   tab: { alignItems: 'center' }
 });

@@ -6,6 +6,7 @@
  */
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { verticalScale, moderateScale } from '../utils/responsive';
 
 // RHCM 10/22/25 - Lightweight line chart using native Views (no SVG/native deps).
 // Props:
@@ -14,7 +15,7 @@ import { View, StyleSheet } from 'react-native';
 // - color: string
 // - strokeWidth: number
 // - pointRadius: number
-export default function LineChart({ data = [], height = 60, color = '#e84b4b', strokeWidth = 2, pointRadius = 3 }) {
+export default function LineChart({ data = [], height = verticalScale(60), color = '#e84b4b', strokeWidth = moderateScale(2), pointRadius = moderateScale(3) }) {
   const [layout, setLayout] = useState({ width: 0, height });
 
   if (!data || data.length === 0) return <View style={{ height }} />;

@@ -8,9 +8,11 @@ import { BackIcon } from '../components/Icons';
 import { UpdateFeedback } from '../api';
 import { log } from '../utils/debug';
 
-const { width } = Dimensions.get('window');
+import { SCREEN, scale, verticalScale, moderateScale, fontSize } from '../utils/responsive';
+
+const { WIDTH: width } = SCREEN;
 const isTablet = width >= 768;
-const scale = isTablet ? Math.min(width / 375, 1.5) : width / 375; // Cap scale for tablets
+const localScale = isTablet ? Math.min(width / 375, 1.5) : width / 375; // preserve the previous cap behavior for any legacy usage
 const maxCardWidth = isTablet ? width * 0.6 : width * 0.95; // Limit card width on tablets
 
 export default function Feedback({ navigation }){
@@ -52,7 +54,7 @@ export default function Feedback({ navigation }){
     <ScrollView contentContainerStyle={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <BackIcon size={28 * scale} color="#666" />
+          <BackIcon size={moderateScale(28)} color="#666" />
         </TouchableOpacity>
         <Text style={styles.title}>Feedback</Text>
       </View>
@@ -83,7 +85,7 @@ export default function Feedback({ navigation }){
 const styles = StyleSheet.create({
   container: {
     padding: width * 0.05,
-    paddingBottom: width * 0.15,
+    paddingBottom: verticalScale(width * 0.15),
     backgroundColor: '#fff',
     flexGrow: 1,
     alignItems: isTablet ? 'center' : 'stretch'
@@ -94,22 +96,22 @@ const styles = StyleSheet.create({
     alignSelf: isTablet ? 'center' : 'stretch'
   },
   backButton: {
-    padding: 6 * scale,
-    marginTop: 6 * scale,
-    marginBottom: 4 * scale,
+    padding: moderateScale(6),
+    marginTop: verticalScale(6),
+    marginBottom: verticalScale(4),
     alignSelf: 'flex-start'
   },
   title: {
-    fontSize: 36 * scale,
+    fontSize: fontSize(28),
     color: '#e84b4b',
     fontWeight: '700',
-    marginTop: 4 * scale
+    marginTop: verticalScale(4)
   },
   card: {
     backgroundColor: '#fff',
-    padding: width * 0.03,
-    marginTop: width * 0.03,
-    borderRadius: 12 * scale,
+    padding: moderateScale(width * 0.03),
+    marginTop: verticalScale(width * 0.03),
+    borderRadius: moderateScale(12),
     width: '100%',
     maxWidth: maxCardWidth,
     alignSelf: isTablet ? 'center' : 'stretch'
@@ -117,39 +119,39 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: '#e6e6e6',
-    borderRadius: 12 * scale,
-    padding: 14 * scale,
-    marginTop: 8 * scale,
-    fontSize: 16 * scale
+    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
+    marginTop: verticalScale(8),
+    fontSize: fontSize(16)
   },
   checkboxRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 12 * scale
+    marginTop: verticalScale(12)
   },
   checkboxIcon: {
-    fontSize: 20 * scale,
-    marginRight: 8 * scale
+    fontSize: fontSize(16),
+    marginRight: moderateScale(8)
   },
   checkboxText: {
-    fontSize: 16 * scale
+    fontSize: fontSize(14)
   },
   commentInput: {
     borderWidth: 1,
     borderColor: '#e6e6e6',
-    borderRadius: 12 * scale,
-    padding: 14 * scale,
-    marginTop: 16 * scale,
+    borderRadius: moderateScale(12),
+    padding: moderateScale(12),
+    marginTop: verticalScale(16),
     textAlignVertical: 'top',
-    minHeight: width * 0.6,
-    fontSize: 16 * scale
+    minHeight: verticalScale(width * 0.6),
+    fontSize: fontSize(14)
   },
   button: {
     backgroundColor: '#e84b4b',
-    padding: 16 * scale,
-    borderRadius: 12 * scale,
+    padding: moderateScale(14),
+    borderRadius: moderateScale(12),
     alignItems: 'center',
-    marginTop: 16 * scale
+    marginTop: verticalScale(16)
   },
   buttonDisabled: {
     opacity: 0.6
@@ -157,6 +159,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: '700',
-    fontSize: 16 * scale
+    fontSize: fontSize(14)
   }
 });
