@@ -1,163 +1,204 @@
+/* RHCM 10/22/25
+ * src/screens/Dashboard.js
+ * The main dashboard view showing summary metrics and navigation to Tasks,
+ * Contacts, Help, and Feedback. Fetches dashboard data via GetDashboard.
+ */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
-import BarChart from '../components/BarChart';
-import { GetTaskList, UpdateTaskDone } from '../api';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { GetDashboard } from '../api';
+import { fontSize, scale, verticalScale, moderateScale } from '../utils/responsive';
+import { log } from '../utils/debug';
 
-const TASKS = [
-  { id: '1', name: 'James', note: 'Introduction', date: 'Sep 9' },
-  { id: '2', name: 'kharl', note: 'Clarity Conversation', date: 'Sep 14' },
-  { id: '3', name: 'Jimmy', note: 'Gift', date: 'Sep 24' },
-  { id: '4', name: 'Loren', note: 'DOV', date: 'Sep 26' }
-];
+export default function Task({ navigation }) {
+  const [data, setData] = useState(null);
 
-export default function Task({ navigation }){
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
-
-  const load = async () => {
-    setLoading(true);
-    try {
-      const res = await GetTaskList();
-      if (res?.success) setTasks(res.tasks || []);
-    } finally {
-      setLoading(false);
+  // Helper function to extract metrics from nested task structure (Restored Original Logic)
+  function extractMetrics(tasksSummary) {
+    if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
+      return null;
     }
-  };
+    
+    // Navigate through the nested structure to find metrics
+    try {
+      const nested = tasksSummary[0]?.name?.Task?.TaskName;
+      if (nested) {
+        return {
+          harmlessStarter: parseInt(nested.HarmlessStarter) || 0,
+          greenlight: parseInt(nested.Greenlight) || 0,
+          clarityConvos: parseInt(nested.ClarityConvos) || 0,
+          totalDOV: parseInt(nested.TotalDOV) || 0,
+          introduction: parseInt(nested.Introduction) || 0,
+          referral: parseInt(nested.Referral) || 0,
+          partner: parseInt(nested.Partner) || 0
+        };
+      }
+    } catch (e) {
+      log('Dashboard: Error extracting metrics', e);
+    }
+    return null;
+  }
 
-  useEffect(() => { load(); }, []);
+  // Helper function to extract tasks from the malformed structure (Restored Original Logic)
+  function extractTasks(tasksSummary) {
+    const tasks = [];
+    
+    if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
+      return tasks;
+    }
+    
+    try {
+      const firstTask = tasksSummary[0]?.name;
+      if (firstTask) {
+        // First task
+        tasks.push({
+          name: firstTask['#text'] || 'Untitled Task',
+          date: firstTask.TaskName?.Date || ''
+        });
+        
+        // Second task (nested inside)
 
-  const onTapTask = (task) => {
-    Alert.alert('Mark complete?', 'Are you sure you want to mark this task completed?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Yes', onPress: async () => {
-        setLoading(true);
-        try {
-          await UpdateTaskDone(task.id);
-          await load();
-        } finally { setLoading(false); }
-      } }
-    ]);
-  };
+      }
+    } catch (e) {
+      log('Dashboard: Error extracting tasks', e);
+    }
+    
+    return tasks;
+  }
+  {/*EF 11/12/2025
+    getdashboard datas
+    */}
+  useEffect(() => {
+    let mounted = true;
+    async function load() {
+      try {
+        const res = await GetDashboard();
+        if (!mounted) return;
+        
+        if (res?.requestUrl) {
+          try { 
+            log('Dashboard: GetDashboard URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
+            log('Dashboard: GetDashboard URL (full):', res.requestUrl); 
+          } catch (e) {}
+        }
+        
+        log('Dashboard: Full API response:', JSON.stringify(res, null, 2));
+        
+        if (res?.success && res?.data) {
+          const apiData = res.data;
+          
+          // Ensure arrays - API already returns lowercase keys
+          const ensureArray = (value) => {
+            if (!value) return [];
+            if (Array.isArray(value)) return value;
+            return [value];
+          };
+          
+          const parsedData = {
+            // FIX: Pass tasksSummary to the task extractors (Original behavior)
+            tasks: extractTasks(apiData.tasksSummary),
+            // FIX: Ensure bestPartner is correctly mapped
+            bestPartners: ensureArray(apiData.bestPartner),
+            // FIX: Ensure current is correctly mapped to currentPartners (The previous fix that worked)
+            currentPartners: ensureArray(apiData.current),
+            recent: ensureArray(apiData.recent),
+            dov: ensureArray(apiData.dov),
+            // FIX: Pass tasksSummary to the metrics extractors (Original behavior)
+            metrics: extractMetrics(apiData.tasksSummary) || {
+              harmlessStarter: 0,
+              greenlight: 0,
+              clarityConvos: 0,
+              totalDOV: 0,
+              introduction: 0,
+              referral: 0,
+              partner: 0
+            }
+          };
+          
+          log('Dashboard: Parsed data:', JSON.stringify(parsedData, null, 2));
+          setData(parsedData);
+        } else {
+          log('Dashboard: API response not successful', res);
+        }
+      } catch (e) {
+        log('Dashboard: GetDashboard exception', e && e.stack ? e.stack : e);
+      }
+    }
+    load();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
-    <ScrollView contentContainerStyle={styles.page}>
-      <Text style={styles.title}>Task</Text>
-      <TouchableOpacity style={{position:'absolute',left:18,top:24,padding:8}} onPress={() => navigation.goBack()}>
-        <Text style={{color:'#e84b4b'}}>Back</Text>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scroller}>
+        <Text style={styles.title}></Text>
+
+        {/* <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
+          <HamburgerIcon size={22} color="#333" />
+        </TouchableOpacity> */}
+      <TouchableOpacity style={{ position: 'absolute', left: moderateScale(12), top: verticalScale(12), padding: moderateScale(6) }} onPress={() => navigation.goBack()}>
+      <Text style={{ color: '#e84b4b' }}>← Back</Text>
       </TouchableOpacity>
+        <Text style={styles.title}>Task</Text>
 
-      {/* Best Referral Partner */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Best Referral Partner</Text>
-        <View style={styles.smallRow}><Text style={styles.partner}>Jack Miller</Text><Text style={styles.partnerAmount}>$36,000</Text></View>
-        <View style={styles.smallRow}><Text style={styles.partner}>Jhon de rosa</Text><Text style={styles.partnerAmount}>$22,425</Text></View>
-        <View style={styles.smallRow}><Text style={styles.partner}>Martin Mayers</Text><Text style={styles.partnerAmount}>$17,089</Text></View>
-        <View style={styles.smallRow}><Text style={styles.partner}>kent Mayers</Text><Text style={styles.partnerAmount}>$11,298</Text></View>
-      </View>
+        {/* EF 11/12/2025
+            Display task datas from api in the task card
+        */}
 
-      {/* Current Runaway Relationships */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Current Runaway Relationships</Text>
-        <View style={styles.smallRow}><Text>Lucas Mendoza</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-        <View style={styles.smallRow}><Text>Ava Torres</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-        <View style={styles.smallRow}><Text>Ethan Brooks</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-        <View style={styles.smallRow}><Text>Sophia Ramirez</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-      </View>
+        {/* Tasks Card */}
+        <TouchableOpacity style={[styles.card, { marginTop: verticalScale(16) }]} onPress={() => navigation.navigate('Task')}>
 
-      {/* Dates & DOV */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Dates & DOV</Text>
-        <View style={styles.pillsRow}>
-          <View style={styles.pill}><Text>Harmless Starters</Text><Text style={styles.pillNumber}>2,001</Text></View>
-          <View style={styles.pill}><Text>Greenlight Questions</Text><Text style={styles.pillNumber}>1,873</Text></View>
-          <View style={styles.pill}><Text>Clarity Convos</Text><Text style={styles.pillNumber}>1,212</Text></View>
-        </View>
+          {(data?.tasksSummary || []).slice(0, 4).map((t, i) => {
+            // Some servers return nested structure like t.name = { '#text': 'James' }
+              const name = typeof t.name === 'object' ? (t.name['#text'] || JSON.stringify(t.name)) : t.name;
+              const task = t.TaskName || t.task || '';
+                return (
+                  <View key={`ts-${t?.id ?? i}`} style={styles.rowSpace}>
+                    <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
+                    <Text>{`${name || '—'}   ${task}`}</Text>
+                    <Text style={{ color: '#999' }}>{t.date || ''}</Text>
+                    </View>
+                            );
+                            })}             
 
-        <View style={styles.breakdown}>
-          <View style={styles.breakRow}><Text>Handwritten Notes</Text><Text>1,847</Text></View>
-          <View style={styles.breakRow}><Text>Gifting</Text><Text>2,873</Text></View>
-          <View style={styles.breakRow}><Text>Videos</Text><Text>847</Text></View>
-          <View style={styles.breakRow}><Text>Other</Text><Text>900</Text></View>
-        </View>
+          <Text style={styles.cardTitle}>Tasks</Text>
+          {data?.tasks && data.tasks.length > 0 ? (
+            data.tasks.slice(0, 3).map((task, i) => (
+              <View key={`task-${task?.id ?? i}`} style={styles.rowSpace}>
+                <Text numberOfLines={1} style={{ flex: 1 }}>
+                  {task.name}
+                </Text>
+                <Text style={{ color: '#999', marginLeft: moderateScale(8) }}>{task.date}</Text>
+              </View>
+            ))
+          ) : (
+            <Text style={{ color: '#999', fontStyle: 'italic' }}>No tasks available</Text>
+          )}
 
-        <View style={styles.dovBox}>
-          <View style={styles.dovChartPlaceholder}>
-            <BarChart data={[120, 180, 75, 90, 200, 160, 80]} height={60} color={'#e84b4b'} />
-          </View>
-          <Text style={styles.dovTotal}>89,087</Text>
-        </View>
-      </View>
+        </TouchableOpacity>
 
-      {/* Task list card (compact like screenshot) */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitleSmall}>Task</Text>
-        {loading && <ActivityIndicator style={{marginVertical:12}} />}
-        {tasks.map(t => (
-          <TouchableOpacity key={t.id} style={styles.taskRow} activeOpacity={0.8} onPress={() => onTapTask(t)}>
-            <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
-            <View style={styles.taskMain}><Text style={styles.taskName}>{t.name}</Text><Text style={styles.taskNote}>{t.note}</Text></View>
-            <Text style={styles.taskDate}>{t.date}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
-      {/* Recently Identified Potential Partners */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Recently Identified Potential Partners</Text>
-        <View style={styles.smallRow}><Text>Charly Oman</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-        <View style={styles.smallRow}><Text>Jhon de rosa</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-        <View style={styles.smallRow}><Text>Martin Mayers</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-        <View style={styles.smallRow}><Text>kent Mayers</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-      </View>
+        {/* DOV summary removed from dashboard per specification */}
+      </ScrollView>
 
-      {/* Outcomes */}
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Outcomes</Text>
-        <View style={styles.outcomesRow}><Text>Introductions</Text><Text style={styles.outcomeNumber}>3,671</Text></View>
-        <View style={styles.outcomesRow}><Text>Referrals</Text><Text style={styles.outcomeNumber}>4,471</Text></View>
-        <View style={styles.outcomesRow}><Text>Amount of Referral Partners</Text><Text style={styles.outcomeNumber}>3,671</Text></View>
-
-        <View style={styles.revenueBox}>
-          <View style={{flex:1}}>
-            <Text style={{fontSize:12,color:'#666'}}>Referral Revenue Generated</Text>
-            <View style={styles.smallChart}><BarChart data={[40,80,120,40,160,80]} height={44} color={'#e84b4b'} /></View>
-          </View>
-          <Text style={styles.revenueAmount}>$105,000</Text>
-        </View>
-      </View>
-
-      <View style={{height:40}} />
-    </ScrollView>
-  )
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-  page:{padding:20,paddingBottom:120,backgroundColor:'#fff'},
-  title:{fontSize:36,color:'#e84b4b',fontWeight:'700',marginTop:6},
-  card:{backgroundColor:'#fff',borderRadius:16,padding:14,marginTop:18,shadowColor:'#000',shadowOpacity:0.04,elevation:3},
-  cardTitle:{fontWeight:'700',marginBottom:12,fontSize:16},
-  cardTitleSmall:{fontWeight:'700',marginBottom:12,fontSize:14,color:'#333'},
-  smallRow:{flexDirection:'row',justifyContent:'space-between',paddingVertical:8,borderBottomWidth:1,borderColor:'#f6f6f6'},
-  partner:{color:'#333'},
-  partnerAmount:{color:'#111',fontWeight:'700'},
-  phone:{color:'#666'},
-  pillsRow:{marginTop:6},
-  pill:{backgroundColor:'#fdeaea',borderRadius:12,padding:10,marginVertical:6,flexDirection:'row',justifyContent:'space-between'},
-  pillNumber:{fontWeight:'700'},
-  breakdown:{marginTop:8,backgroundColor:'#fff'},
-  breakRow:{flexDirection:'row',justifyContent:'space-between',paddingVertical:6,color:'#666'},
-  dovBox:{flexDirection:'row',alignItems:'center',marginTop:12,justifyContent:'space-between'},
-  dovChartPlaceholder:{backgroundColor:'#fff',borderWidth:1,borderColor:'#f0eaea',height:60,width:180,justifyContent:'center',alignItems:'center',borderRadius:8},
-  dovTotal:{fontSize:18,color:'#999',marginLeft:12},
-  taskRow:{flexDirection:'row',alignItems:'center',paddingVertical:12,borderBottomWidth:1,borderColor:'#f6f6f6'},
-  checkbox:{width:28,color:'#999'},
-  taskMain:{flex:1},
-  taskName:{fontSize:16},
-  taskNote:{color:'#888',marginTop:4},
-  taskDate:{color:'#999'},
-  outcomesRow:{flexDirection:'row',justifyContent:'space-between',paddingVertical:10,borderBottomWidth:1,borderColor:'#f6f6f6'},
-  outcomeNumber:{fontWeight:'700',fontSize:18},
-  revenueBox:{flexDirection:'row',alignItems:'center',marginTop:12,justifyContent:'space-between'},
-  smallChart:{height:44,width:140,backgroundColor:'#fff',borderWidth:1,borderColor:'#f0eaea',borderRadius:8,justifyContent:'center',alignItems:'center'},
-  revenueAmount:{fontSize:22,fontWeight:'700',color:'#999',marginLeft:12}
+  container: { flex: 1, backgroundColor: '#fff' },
+  scroller: { padding: moderateScale(18), paddingBottom: moderateScale(120) },
+  title: { fontSize: fontSize(28), color: '#e84b4b', fontWeight: '700', marginTop: verticalScale(6) },
+  card: { backgroundColor: '#fff', padding: moderateScale(12), borderRadius: moderateScale(12), marginTop: verticalScale(12), shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
+  cardTitle: { fontWeight: '700', marginBottom: verticalScale(10), fontSize: fontSize(14) },
+  rowSpace: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(8), alignItems: 'center' },
+  pill: { backgroundColor: '#fdeaea', borderRadius: moderateScale(8), padding: moderateScale(8), flexDirection: 'row', justifyContent: 'space-between', marginTop: verticalScale(8) },
+  big: { fontSize: fontSize(18), fontWeight: '700' },
+  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: verticalScale(8) },
+  metricItem: { width: '50%', paddingVertical: verticalScale(8), alignItems: 'center' },
+  metricValue: { fontSize: fontSize(20), fontWeight: '700', color: '#e84b4b' },
+  metricLabel: { fontSize: fontSize(12), color: '#666', marginTop: verticalScale(4) },
+  tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: verticalScale(70), backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#f0f0f0' },
+  tab: { alignItems: 'center' }
 });

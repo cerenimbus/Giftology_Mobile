@@ -1,5 +1,10 @@
+/* RHCM 10/22/25
+ * src/screens/Profile.js
+ * Minimal profile screen used as a placeholder in the demo app.
+ */
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { scale, verticalScale, fontSize } from '../utils/responsive';
 
 export default function Profile(){
   return (
@@ -12,6 +17,6 @@ export default function Profile(){
 
 const styles = StyleSheet.create({
   container:{flex:1,justifyContent:'center',alignItems:'center'},
-  avatar:{width:96,height:96,borderRadius:48,backgroundColor:'#eee'},
-  name:{marginTop:12,fontSize:18}
+  avatar:{width: scale(96),height: scale(96),borderRadius: scale(48),backgroundColor:'#eee'},
+  name:{marginTop: verticalScale(12),fontSize: fontSize(16)}
 });
