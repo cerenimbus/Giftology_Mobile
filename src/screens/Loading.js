@@ -25,7 +25,7 @@ export default function Loading({ navigation }){
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Relationship Radar</Text>
+      <Text style={styles.title}>ROR</Text>
       <Text style={{marginTop:8}}>Powered by:</Text>
       <Image source={require('../../assets/logo.png')} style={{width:300,height:110,marginTop:12}} resizeMode="contain" />
       <ActivityIndicator size="large" color="#e84b4b" style={{marginTop:40}} />

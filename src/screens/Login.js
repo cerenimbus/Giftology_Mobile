@@ -93,7 +93,7 @@ export default function Login({ navigation }) {
           keyboardShouldPersistTaps="handled"
         >
           <View style={[styles.innerContainer, { width: contentWidth }]}>
-            <Text style={styles.relationTitle}>Relationship Radar</Text>
+            <Text style={styles.relationTitle}>ROR</Text>
             <Text style={styles.powered}>Powered by:</Text>
             
             <Image 
