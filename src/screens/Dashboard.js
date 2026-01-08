@@ -142,8 +142,10 @@ export default function Dashboard({ navigation }) {
       {/* 
       JA 11/12/2025
       ✅ Current Runaway Relationships (from GetDashboard) */}
+      {/* RHCM 23/12/2025
+      *Renamed "Runaway" to "Runway" */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>Current Runaway Relationships</Text>
+        <Text style={styles.cardTitle}>Current Runway Relationships</Text> {/* RHCM 23/12/2025 */}
         {currentRunners?.length ? (
             currentRunners.slice(0, 4).map((c, i) => (
               <View key={`cur-${c?.id ?? i}`} style={styles.smallRow}>

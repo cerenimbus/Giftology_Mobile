@@ -16,3 +16,13 @@ export function HamburgerIcon({ size = 20, color = '#000' }){
 export function BackIcon({ size = 20, color = '#000' }){
   return <Text style={{fontSize:size,color}}>←</Text>
 }
+
+// Eye icon for showing password
+export function EyeIcon({ size = 20, color = '#000' }){
+  return <Text style={{fontSize:size,color}}>👁</Text>
+}
+
+// Eye-off icon for hiding password
+export function EyeOffIcon({ size = 20, color = '#000' }){
+  return <Text style={{fontSize:size,color}}>🙈</Text>
+}

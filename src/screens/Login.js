@@ -22,6 +22,7 @@ import {
   SafeAreaView 
 } from 'react-native';
 import { AuthorizeUser } from '../api';
+import { EyeIcon, EyeOffIcon } from '../components/Icons';
 import { setAuthCode, getAuthCode } from '../utils/storage';
 import { log, setDebugFlag, getDebugFlag } from '../utils/debug';
 import { fontSize, scale, verticalScale, moderateScale } from '../utils/responsive';
@@ -31,6 +32,7 @@ export default function Login({ navigation }) {
   const [password, setPassword] = useState();
   const [termsChecked, setTermsChecked] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Hook for responsive layout calculations
   const { width, height } = useWindowDimensions();
@@ -114,12 +116,18 @@ export default function Login({ navigation }) {
             />
 
             <Text style={styles.label}>Password</Text>
-            <TextInput 
-              style={styles.input} 
-              secureTextEntry 
-              value={password} 
-              onChangeText={setPassword} 
-            />
+            <View style={styles.inputRow}>
+              <TextInput
+                style={[styles.input, styles.inputFlex]}
+                secureTextEntry={!showPassword}
+                value={password}
+                onChangeText={setPassword}
+                autoCapitalize="none"
+              />
+              <TouchableOpacity onPress={() => setShowPassword(s => !s)} style={styles.eyeButton} accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}>
+                {showPassword ? <EyeOffIcon size={20} color="#666" /> : <EyeIcon size={20} color="#666" />}
+              </TouchableOpacity>
+            </View>
 
             <View style={styles.row}>
               <TouchableOpacity onPress={() => setTermsChecked(s => !s)} style={{marginRight:moderateScale(8)}}>
@@ -200,6 +208,20 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     padding: moderateScale(12),
     width: '100%',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: verticalScale(8),
+    width: '100%',
+  },
+  inputFlex: {
+    flex: 1,
+    width: 'auto',
+  },
+  eyeButton: {
+    padding: moderateScale(8),
+    marginLeft: moderateScale(6),
   },
   row: { 
     flexDirection: 'row', 
