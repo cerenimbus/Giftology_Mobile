@@ -116,9 +116,9 @@ export default function Login({ navigation }) {
             />
 
             <Text style={styles.label}>Password</Text>
-            <View style={styles.inputRow}>
+            <View style={styles.inputContainer}>
               <TextInput
-                style={[styles.input, styles.inputFlex]}
+                style={styles.inputInner}
                 secureTextEntry={!showPassword}
                 value={password}
                 onChangeText={setPassword}
@@ -209,19 +209,22 @@ const styles = StyleSheet.create({
     padding: moderateScale(12),
     width: '100%',
   },
-  inputRow: {
+  inputContainer: {
+    marginTop: verticalScale(8),
+    borderWidth: 1,
+    borderColor: '#e6e6e6',
+    borderRadius: moderateScale(12),
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: verticalScale(8),
-    width: '100%',
+    paddingHorizontal: moderateScale(8),
   },
-  inputFlex: {
+  inputInner: {
     flex: 1,
-    width: 'auto',
+    paddingVertical: moderateScale(12),
+    paddingHorizontal: moderateScale(6),
   },
   eyeButton: {
     padding: moderateScale(8),
-    marginLeft: moderateScale(6),
   },
   row: { 
     flexDirection: 'row', 

@@ -6,6 +6,7 @@
  */
 import React from 'react';
 import { Text } from 'react-native';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // RHCM 10/22/25 - simple hamburger menu icon (text glyph)
 export function HamburgerIcon({ size = 20, color = '#000' }){
@@ -19,10 +20,10 @@ export function BackIcon({ size = 20, color = '#000' }){
 
 // Eye icon for showing password
 export function EyeIcon({ size = 20, color = '#000' }){
-  return <Text style={{fontSize:size,color}}>👁</Text>
+  return <MaterialCommunityIcons name="eye" size={size} color={color} />
 }
 
 // Eye-off icon for hiding password
 export function EyeOffIcon({ size = 20, color = '#000' }){
-  return <Text style={{fontSize:size,color}}>🙈</Text>
+  return <MaterialCommunityIcons name="eye-off" size={size} color={color} />
 }
