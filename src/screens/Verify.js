@@ -3,23 +3,32 @@
  * Verification screen where user enters a 6-digit code received via SMS.
  * Calls AuthorizeDeviceID and routes to Main on success.
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { AuthorizeDeviceID } from '../api';
 import { log } from '../utils/debug';
-import { getAuthCode, removeAuthCode } from '../utils/storage';
+import { removeAuthCode } from '../utils/storage';
 
-export default function Verify({ navigation }){
+export default function Verify({ navigation, route }){
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const email = route?.params?.email || '';
+  const password = route?.params?.password || '';
+
+  useEffect(() => {
+    if (!email || !password) {
+      // If credentials aren't provided, fall back to asking the user to log in again
+      Alert.alert('Missing credentials', 'Please sign in again', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
+    }
+  }, []);
 
   const onSubmit = async () => {
     if (code.length !== 6) return;
     setLoading(true);
     try {
       log('Verify: submitting code', code);
-  const res = await AuthorizeDeviceID({ SecurityCode: code });
-  log('Verify: AuthorizeDeviceID response', res);
+      const res = await AuthorizeDeviceID({ SecurityCode: code, UserName: email, Password: password });
+      log('Verify: AuthorizeDeviceID response', res);
   if (res?.requestUrl) { try { log('Verify: AuthorizeDeviceID URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Verify: AuthorizeDeviceID URL (full):', res.requestUrl); } catch(e){} }
       if (res?.success) {
         navigation.replace('Main');

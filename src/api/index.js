@@ -61,7 +61,7 @@ function getCleanDeviceId() {
 // RHCM 10/22/25 - central caller used by all exported API functions below.
 // Returns object: { success, errorNumber, message, raw, parsed, requestUrl }
 // paramOrder: optional array to specify parameter order in URL
-async function callService(functionName, extraParams = {}, paramOrder = null) {
+async function callService(functionName, extraParams = {}, paramOrder = null, options = {}) {
   const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '' });
   const deviceId = getCleanDeviceId() || (await getDeviceId()) || '';
   const ac = (await getAuthCode()) || '';
@@ -69,8 +69,16 @@ async function callService(functionName, extraParams = {}, paramOrder = null) {
   const dateStr = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${String(currentDate.getDate()).padStart(2, '0')}/${currentDate.getFullYear()}-${String(currentDate.getHours()).padStart(2, '0')}:${String(currentDate.getMinutes()).padStart(2, '0')}`;
   // Key is SHA1(deviceId + date + AuthCode + DeviceID) per spec
   const key = sha1(deviceId + dateStr);
+  // Build base params; respect options.skipAC to omit AC
+  const base = { DeviceID: deviceId, Date: dateStr, Key: key };
+  if (!options.skipAC) base.AC = ac;
 
-  const params = Object.assign({ DeviceID: deviceId, Date: dateStr, Key: key, AC: ac }, extraParams);
+  // If caller requested DeviceID to be URL-encoded, encode it here (affects only the base DeviceID)
+  if (options.encodeDeviceID && base.DeviceID) {
+    base.DeviceID = encodeURIComponent(base.DeviceID);
+  }
+
+  const params = Object.assign(base, extraParams);
   const url = buildUrl(functionName, params, paramOrder);
 
   try {
@@ -167,8 +175,52 @@ export async function AuthorizeUser(payload) {
   return callService('AuthorizeUser', params, paramOrder);
 }
 
-export async function AuthorizeDeviceID({ SecurityCode }) {
-  return callService('AuthorizeDeviceID', { SecurityCode });
+export async function AuthorizeDeviceID(payload) {
+  // According to spec: DeviceID, UserName, and Password must be URLENCODED
+  // Key = SHA-1(DeviceID + Date + AuthorizationCode) - should be provided by caller
+  // Date = MM/DD/YYYY-HH:mm - should be provided by caller
+  
+  // Get DeviceID from payload or fallback to getDeviceId() (will be handled by callService)
+  const deviceId = payload.DeviceID || null
+  
+  const params = {
+    UserName: payload.UserName || '', // Don't URL encode - server expects @ symbol unencoded
+    Password: payload.Password || '', // Don't URL encode
+    Language: payload.Language || 'EN',
+    MobileVersion: payload.MobileVersion || payload.GiftologyVersion || '1',
+    SecurityCode: payload.SecurityCode, // 6 digit code
+  }
+  
+  // Only include Date and Key if they're actually provided (not undefined/null/empty)
+  // Otherwise, callService will calculate them
+  if (payload.Date && payload.Date !== 'null' && payload.Date !== 'undefined') {
+    params.Date = payload.Date // MM/DD/YYYY-HH:mm supplied by caller
+  }
+  if (payload.Key && payload.Key !== 'null' && payload.Key !== 'undefined') {
+    params.Key = payload.Key   // SHA-1(DeviceID + Date + AuthorizationCode) - supplied by caller
+  }
+  
+  // URL encode DeviceID if provided in payload (per spec requirement)
+  if (deviceId) {
+    params.DeviceID = encodeURIComponent(deviceId)
+  }
+
+  // Matches required API parameter order (based on working example):
+  // DeviceID, Date, Key, UserName, Password, Language, MobileVersion, SecurityCode
+  const paramOrder = [
+    'DeviceID',
+    'Date',
+    'Key',
+    'UserName',
+    'Password',
+    'Language',
+    'MobileVersion',
+    'SecurityCode'
+  ]
+
+  // For AuthorizeDeviceID, we don't want AC in the URL (not in spec)
+  // If DeviceID wasn't provided, callService will add it from getDeviceId() and we'll encode it there
+  return callService('AuthorizeDeviceID', params, paramOrder, { skipAC: true, encodeDeviceID: !deviceId })
 }
 
 export async function GetDashboard() {

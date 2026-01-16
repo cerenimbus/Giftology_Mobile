@@ -66,7 +66,8 @@ export default function Login({ navigation }) {
         // server will send SMS code to phone; server may return Auth in parsed payload
         const ac = res?.parsed?.Auth || res?.parsed?.auth || '';
         if (ac) await setAuthCode(ac);
-        navigation.navigate('Verify');
+        // Pass credentials to Verify so it can include them in the AuthorizeDeviceID call
+        navigation.navigate('Verify', { email, password });
       } else {
         Alert.alert('Sign in failed', res?.message || 'Unable to authorize employee');
         log('Login failed', res);
