@@ -1,10 +1,10 @@
 /* RHCM 10/22/25
  * src/screens/Contacts.js
- * Lists potential partners retrieved from GetDashboard (combines BestPartner, Current, Recent).
+ * Lists contacts retrieved from GetContactList API.
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { GetDashboard } from '../api';
+import { GetContactList, GetDashboard } from '../api';
 import { log } from '../utils/debug';
 
 // Improved responsive scaling with tablet support
@@ -33,73 +33,106 @@ const spacingScale = (size) => {
 
 export default function Contacts({ navigation }){
   const [contacts, setContacts] = useState([]);
-/* LP 11/12/25
- * src/screens/Contacts.js
- * getdashboard
- */
   useEffect(() => {
     let mounted = true;
     async function load() {
       try {
-        const res = await GetDashboard();
+        // Try GetContactList first
+        const res = await GetContactList();
         if (!mounted) return;
-        log('Contacts: GetDashboard response', res);
-        if (res?.success && res?.data) {
-          // Combine all contacts from BestPartner, Current, and Recent
-          const allContacts = [];
+        log('Contacts: GetContactList response', res);
+        
+        let loadedContacts = [];
+        
+        // Try to get contacts from GetContactList response
+        if (res?.contacts && Array.isArray(res.contacts)) {
+          loadedContacts = res.contacts;
+        } else if (res?.parsed?.Selections?.Contact) {
+          // Extract contacts directly from parsed response if API returned them
+          const sels = res.parsed.Selections;
+          const contactArray = Array.isArray(sels.Contact) ? sels.Contact : [sels.Contact];
+          loadedContacts = contactArray.map(c => ({
+            id: String(c?.Serial || ''),
+            name: c?.Name || '',
+            status: c?.Status || '',
+            phone: c?.Phone || ''
+          }));
+        }
+        
+        // If GetContactList failed or returned no contacts, try GetDashboard as fallback
+        if (loadedContacts.length === 0) {
+          log('Contacts: GetContactList returned no contacts, trying GetDashboard as fallback');
+          const dashboardRes = await GetDashboard();
+          if (!mounted) return;
+          log('Contacts: GetDashboard response', dashboardRes);
           
-          // Add BestPartner contacts
-          if (res.data.bestPartner) {
-            const bestPartners = Array.isArray(res.data.bestPartner) ? res.data.bestPartner : [res.data.bestPartner];
-            bestPartners.forEach(c => {
-              if (c) {
-                allContacts.push({
-                  id: String(c.ContactSerial || c.contactSerial || ''),
-                  name: c.Name || c.name || '',
-                  status: 'Best Partner',
-                  phone: c.Phone || c.phone || ''
-                });
-              }
-            });
+          if (dashboardRes?.success && dashboardRes?.data) {
+            const allContacts = [];
+            
+            // Add BestPartner contacts
+            if (dashboardRes.data.bestPartner) {
+              const bestPartners = Array.isArray(dashboardRes.data.bestPartner) 
+                ? dashboardRes.data.bestPartner 
+                : [dashboardRes.data.bestPartner];
+              bestPartners.forEach(c => {
+                if (c) {
+                  allContacts.push({
+                    id: String(c.ContactSerial || c.contactSerial || c.Serial || ''),
+                    name: c.Name || c.name || '',
+                    status: 'Best Partner',
+                    phone: c.Phone || c.phone || ''
+                  });
+                }
+              });
+            }
+            
+            // Add Current contacts
+            if (dashboardRes.data.current) {
+              const current = Array.isArray(dashboardRes.data.current) 
+                ? dashboardRes.data.current 
+                : [dashboardRes.data.current];
+              current.forEach(c => {
+                if (c) {
+                  allContacts.push({
+                    id: String(c.ContactSerial || c.contactSerial || c.Serial || ''),
+                    name: c.Name || c.name || '',
+                    status: 'Current',
+                    phone: c.Phone || c.phone || ''
+                  });
+                }
+              });
+            }
+            
+            // Add Recent contacts
+            if (dashboardRes.data.recent) {
+              const recent = Array.isArray(dashboardRes.data.recent) 
+                ? dashboardRes.data.recent 
+                : [dashboardRes.data.recent];
+              recent.forEach(c => {
+                if (c) {
+                  allContacts.push({
+                    id: String(c.ContactSerial || c.contactSerial || c.Serial || ''),
+                    name: c.Name || c.name || '',
+                    status: 'Recent',
+                    phone: c.Phone || c.phone || ''
+                  });
+                }
+              });
+            }
+            
+            loadedContacts = allContacts;
+            log('Contacts: Loaded', loadedContacts.length, 'contacts from GetDashboard fallback');
           }
-          
-          // Add Current contacts
-          if (res.data.current) {
-            const current = Array.isArray(res.data.current) ? res.data.current : [res.data.current];
-            current.forEach(c => {
-              if (c) {
-                allContacts.push({
-                  id: String(c.ContactSerial || c.contactSerial || ''),
-                  name: c.Name || c.name || '',
-                  status: 'Current',
-                  phone: c.Phone || c.phone || ''
-                });
-              }
-            });
-          }
-          
-          // Add Recent contacts
-          if (res.data.recent) {
-            const recent = Array.isArray(res.data.recent) ? res.data.recent : [res.data.recent];
-            recent.forEach(c => {
-              if (c) {
-                allContacts.push({
-                  id: String(c.ContactSerial || c.contactSerial || ''),
-                  name: c.Name || c.name || '',
-                  status: 'Recent',
-                  phone: c.Phone || c.phone || ''
-                });
-              }
-            });
-          }
-          
-          setContacts(allContacts);
-          log('Contacts: Loaded', allContacts.length, 'contacts from GetDashboard');
+        }
+        
+        if (loadedContacts.length > 0) {
+          setContacts(loadedContacts);
+          log('Contacts: Total loaded', loadedContacts.length, 'contacts');
         } else {
-          log('Contacts: GetDashboard failed', res);
+          log('Contacts: No contacts found from either API');
         }
       } catch (e) {
-        log('Contacts: GetDashboard error', e);
+        log('Contacts: Error loading contacts', e);
       }
     }
     load();
@@ -110,7 +143,7 @@ export default function Contacts({ navigation }){
  
   return (
     <View style={styles.container}>
-      <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main')}>
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
       <Text style={styles.title}>Contacts</Text>
@@ -123,7 +156,7 @@ export default function Contacts({ navigation }){
           </View>
           {contacts.length > 0 ? (
             contacts.map((item, i) => (
-                <View key={`contact-${item.id ?? i}`} style={styles.row}>
+                <View key={`contact-${item.id || 'unknown'}-${i}`} style={styles.row}>
                 <Text style={styles.name}>{item.name || ''}</Text>
                 <Text style={styles.status}>{item.status || ''}</Text>
                 <Text style={styles.phone}>{item.phone || ''}</Text>
