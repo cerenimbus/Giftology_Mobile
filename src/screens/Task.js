@@ -1,129 +1,47 @@
 /* RHCM 10/22/25
- * src/screens/Dashboard.js
- * The main dashboard view showing summary metrics and navigation to Tasks,
- * Contacts, Help, and Feedback. Fetches dashboard data via GetDashboard.
+ * src/screens/Task.js
+ * Task list screen displaying all tasks retrieved from GetTaskList API.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { GetDashboard } from '../api';
-import { fontSize, scale, verticalScale, moderateScale } from '../utils/responsive';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { GetTaskList } from '../api';
+import { fontSize, verticalScale, moderateScale } from '../utils/responsive';
 import { log } from '../utils/debug';
 
 export default function Task({ navigation }) {
-  const [data, setData] = useState(null);
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
 
-  // Helper function to extract metrics from nested task structure (Restored Original Logic)
-  function extractMetrics(tasksSummary) {
-    if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
-      return null;
-    }
-    
-    // Navigate through the nested structure to find metrics
-    try {
-      const nested = tasksSummary[0]?.name?.Task?.TaskName;
-      if (nested) {
-        return {
-          harmlessStarter: parseInt(nested.HarmlessStarter) || 0,
-          greenlight: parseInt(nested.Greenlight) || 0,
-          clarityConvos: parseInt(nested.ClarityConvos) || 0,
-          totalDOV: parseInt(nested.TotalDOV) || 0,
-          introduction: parseInt(nested.Introduction) || 0,
-          referral: parseInt(nested.Referral) || 0,
-          partner: parseInt(nested.Partner) || 0
-        };
-      }
-    } catch (e) {
-      log('Dashboard: Error extracting metrics', e);
-    }
-    return null;
-  }
-
-  // Helper function to extract tasks from the malformed structure (Restored Original Logic)
-  function extractTasks(tasksSummary) {
-    const tasks = [];
-    
-    if (!tasksSummary || !Array.isArray(tasksSummary) || tasksSummary.length === 0) {
-      return tasks;
-    }
-    
-    try {
-      const firstTask = tasksSummary[0]?.name;
-      if (firstTask) {
-        // First task
-        tasks.push({
-          name: firstTask['#text'] || 'Untitled Task',
-          date: firstTask.TaskName?.Date || ''
-        });
-        
-        // Second task (nested inside)
-
-      }
-    } catch (e) {
-      log('Dashboard: Error extracting tasks', e);
-    }
-    
-    return tasks;
-  }
-  {/*EF 11/12/2025
-    getdashboard datas
-    */}
   useEffect(() => {
     let mounted = true;
-    async function load() {
+    
+    async function loadTasks() {
+      setLoading(true);
       try {
-        const res = await GetDashboard();
+        const res = await GetTaskList();
         if (!mounted) return;
         
+        log('Task: GetTaskList response', res);
         if (res?.requestUrl) {
           try { 
-            log('Dashboard: GetDashboard URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
-            log('Dashboard: GetDashboard URL (full):', res.requestUrl); 
+            log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
+            log('Task: GetTaskList URL (full):', res.requestUrl); 
           } catch (e) {}
         }
         
-        log('Dashboard: Full API response:', JSON.stringify(res, null, 2));
-        
-        if (res?.success && res?.data) {
-          const apiData = res.data;
-          
-          // Ensure arrays - API already returns lowercase keys
-          const ensureArray = (value) => {
-            if (!value) return [];
-            if (Array.isArray(value)) return value;
-            return [value];
-          };
-          
-          const parsedData = {
-            // FIX: Pass tasksSummary to the task extractors (Original behavior)
-            tasks: extractTasks(apiData.tasksSummary),
-            // FIX: Ensure bestPartner is correctly mapped
-            bestPartners: ensureArray(apiData.bestPartner),
-            // FIX: Ensure current is correctly mapped to currentPartners (The previous fix that worked)
-            currentPartners: ensureArray(apiData.current),
-            recent: ensureArray(apiData.recent),
-            dov: ensureArray(apiData.dov),
-            // FIX: Pass tasksSummary to the metrics extractors (Original behavior)
-            metrics: extractMetrics(apiData.tasksSummary) || {
-              harmlessStarter: 0,
-              greenlight: 0,
-              clarityConvos: 0,
-              totalDOV: 0,
-              introduction: 0,
-              referral: 0,
-              partner: 0
-            }
-          };
-          
-          log('Dashboard: Parsed data:', JSON.stringify(parsedData, null, 2));
-          setData(parsedData);
+        if (res?.success) {
+          setTasks(res.tasks || []);
         } else {
-          log('Dashboard: API response not successful', res);
+          log('Task: GetTaskList failed', res);
         }
       } catch (e) {
-        log('Dashboard: GetDashboard exception', e && e.stack ? e.stack : e);
+        log('Task: GetTaskList exception', e && e.stack ? e.stack : e);
+      } finally {
+        setLoading(false);
       }
     }
-    load();
+    
+    loadTasks();
     return () => {
       mounted = false;
     };
@@ -132,73 +50,47 @@ export default function Task({ navigation }) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroller}>
-        <Text style={styles.title}></Text>
+        <TouchableOpacity 
+          style={{ position: 'absolute', left: moderateScale(12), top: verticalScale(12), padding: moderateScale(6), zIndex: 10 }} 
+          onPress={() => navigation.goBack()}
+        >
+          <Text style={{ color: '#e84b4b' }}>← Back</Text>
+        </TouchableOpacity>
+        
+        <Text style={styles.title}>Tasks</Text>
 
-        {/* <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
-          <HamburgerIcon size={22} color="#333" />
-        </TouchableOpacity> */}
-      <TouchableOpacity style={{ position: 'absolute', left: moderateScale(12), top: verticalScale(12), padding: moderateScale(6) }} onPress={() => navigation.goBack()}>
-      <Text style={{ color: '#e84b4b' }}>← Back</Text>
-      </TouchableOpacity>
-        <Text style={styles.title}>Task</Text>
+        <View style={styles.card}>
+          {loading && <ActivityIndicator style={{ marginVertical: verticalScale(12) }} />}
 
-        {/* EF 11/12/2025
-            Display task datas from api in the task card
-        */}
-
-        {/* Tasks Card */}
-        <TouchableOpacity style={[styles.card, { marginTop: verticalScale(16) }]} onPress={() => navigation.navigate('Task')}>
-
-          {(data?.tasksSummary || []).slice(0, 4).map((t, i) => {
-            // Some servers return nested structure like t.name = { '#text': 'James' }
-              const name = typeof t.name === 'object' ? (t.name['#text'] || JSON.stringify(t.name)) : t.name;
-              const task = t.TaskName || t.task || '';
-                return (
-                  <View key={`ts-${t?.id ?? i}`} style={styles.rowSpace}>
-                    <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
-                    <Text>{`${name || '—'}   ${task}`}</Text>
-                    <Text style={{ color: '#999' }}>{t.date || ''}</Text>
-                    </View>
-                            );
-                            })}             
-
-          <Text style={styles.cardTitle}>Tasks</Text>
-          {data?.tasks && data.tasks.length > 0 ? (
-            data.tasks.slice(0, 3).map((task, i) => (
-              <View key={`task-${task?.id ?? i}`} style={styles.rowSpace}>
-                <Text numberOfLines={1} style={{ flex: 1 }}>
-                  {task.name}
-                </Text>
-                <Text style={{ color: '#999', marginLeft: moderateScale(8) }}>{task.date}</Text>
+          {tasks.length > 0 ? (
+            tasks.map((task, i) => (
+              <View key={`task-${task?.id ?? i}`} style={styles.taskRow}>
+                <View style={styles.taskMain}>
+                  <Text style={styles.taskName}>{task.name || '—'}</Text>
+                  {task.note && <Text style={styles.taskNote}>{task.note}</Text>}
+                </View>
+                <Text style={styles.taskDate}>{task.date || ''}</Text>
               </View>
             ))
-          ) : (
-            <Text style={{ color: '#999', fontStyle: 'italic' }}>No tasks available</Text>
-          )}
-
-        </TouchableOpacity>
-
-
-        {/* DOV summary removed from dashboard per specification */}
+          ) : !loading ? (
+            <Text style={{ color: '#999', textAlign: 'center', paddingVertical: verticalScale(16) }}>
+              No tasks available
+            </Text>
+          ) : null}
+        </View>
       </ScrollView>
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scroller: { padding: moderateScale(18), paddingBottom: moderateScale(120) },
-  title: { fontSize: fontSize(28), color: '#e84b4b', fontWeight: '700', marginTop: verticalScale(6) },
-  card: { backgroundColor: '#fff', padding: moderateScale(12), borderRadius: moderateScale(12), marginTop: verticalScale(12), shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
-  cardTitle: { fontWeight: '700', marginBottom: verticalScale(10), fontSize: fontSize(14) },
-  rowSpace: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(8), alignItems: 'center' },
-  pill: { backgroundColor: '#fdeaea', borderRadius: moderateScale(8), padding: moderateScale(8), flexDirection: 'row', justifyContent: 'space-between', marginTop: verticalScale(8) },
-  big: { fontSize: fontSize(18), fontWeight: '700' },
-  metricsGrid: { flexDirection: 'row', flexWrap: 'wrap', marginTop: verticalScale(8) },
-  metricItem: { width: '50%', paddingVertical: verticalScale(8), alignItems: 'center' },
-  metricValue: { fontSize: fontSize(20), fontWeight: '700', color: '#e84b4b' },
-  metricLabel: { fontSize: fontSize(12), color: '#666', marginTop: verticalScale(4) },
-  tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: verticalScale(70), backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#f0f0f0' },
-  tab: { alignItems: 'center' }
+  scroller: { padding: moderateScale(18), paddingBottom: moderateScale(120), paddingTop: verticalScale(50) },
+  title: { fontSize: fontSize(28), color: '#e84b4b', fontWeight: '700', marginBottom: verticalScale(16) },
+  card: { backgroundColor: '#fff', padding: moderateScale(12), borderRadius: moderateScale(12), shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
+  taskRow: { flexDirection: 'row', paddingVertical: verticalScale(12), borderBottomWidth: 1, borderBottomColor: '#f0f0f0' },
+  taskMain: { flex: 1 },
+  taskName: { fontSize: fontSize(14), fontWeight: '600', color: '#333', marginBottom: verticalScale(4) },
+  taskNote: { fontSize: fontSize(12), color: '#999' },
+  taskDate: { fontSize: fontSize(12), color: '#999', marginLeft: moderateScale(8) }
 });

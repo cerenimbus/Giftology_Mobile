@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Dimensions, TextInput, TouchableOpacity, Alert } from 'react-native';
 import { AuthorizeDeviceID } from '../api';
 import { log } from '../utils/debug';
-import { removeAuthCode } from '../utils/storage';
+import { removeAuthCode, setAuthCode } from '../utils/storage';
 
 export default function Verify({ navigation, route }){
   const [code, setCode] = useState('');
@@ -31,6 +31,9 @@ export default function Verify({ navigation, route }){
       log('Verify: AuthorizeDeviceID response', res);
   if (res?.requestUrl) { try { log('Verify: AuthorizeDeviceID URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Verify: AuthorizeDeviceID URL (full):', res.requestUrl); } catch(e){} }
       if (res?.success) {
+        // Extract and save AC from the response
+        const ac = res?.parsed?.Auth || res?.parsed?.auth || res?.parsed?.AC || res?.parsed?.ac || '';
+        if (ac) await setAuthCode(ac);
         navigation.replace('Main');
       } else {
         Alert.alert('Verification failed', res?.message || 'Unknown error', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);

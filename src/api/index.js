@@ -67,8 +67,8 @@ async function callService(functionName, extraParams = {}, paramOrder = null, op
   const ac = (await getAuthCode()) || '';
   const currentDate = new Date();
   const dateStr = `${String(currentDate.getMonth() + 1).padStart(2, '0')}/${String(currentDate.getDate()).padStart(2, '0')}/${currentDate.getFullYear()}-${String(currentDate.getHours()).padStart(2, '0')}:${String(currentDate.getMinutes()).padStart(2, '0')}`;
-  // Key is SHA1(deviceId + date + AuthCode + DeviceID) per spec
-  const key = sha1(deviceId + dateStr);
+  // Key is SHA1(deviceId + date + AuthCode) per spec - includeAcInKey option for GetTaskList/GetTask
+  const key = options.includeAcInKey ? sha1(deviceId + dateStr + ac) : sha1(deviceId + dateStr);
   // Build base params; respect options.skipAC to omit AC
   const base = { DeviceID: deviceId, Date: dateStr, Key: key };
   if (!options.skipAC) base.AC = ac;
@@ -317,7 +317,7 @@ export async function GetDOVDateList() {
 }
 
 export async function GetTaskList() {
-  const r = await callService('GetTaskList');
+  const r = await callService('GetTaskList', { MobileVersion: '1.0.10' }, null, { includeAcInKey: true });
   if (!r.success) return r;
   const selections = r.parsed?.Selections || {};
   let tasks = [];
@@ -329,7 +329,7 @@ export async function GetTaskList() {
 }
 
 export async function GetTask({ Task }) {
-  const r = await callService('GetTask', { Task });
+  const r = await callService('GetTask', { Task }, null, { includeAcInKey: true });
   if (!r.success) return r;
   const t = r.parsed?.Task || {};
   return { success: true, task: { id: String(t?.Serial || ''), name: t?.Name, contact: t?.Contact, date: t?.Date, status: t?.Status } };

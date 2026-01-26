@@ -190,7 +190,11 @@ export default function Dashboard({ navigation }) {
       display tasks list from the api
       */}
       {/* Task list card (shows dashboard summary first, then full task list fallback) */}
-      <View style={styles.card}>
+      <TouchableOpacity 
+        style={styles.card}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('Task')}
+      >
         <Text style={styles.cardTitleSmall}>Task</Text>
         {loading && <ActivityIndicator style={{ marginVertical: verticalScale(12) }} />}
 
@@ -211,7 +215,7 @@ export default function Dashboard({ navigation }) {
             );
           }
 
-          return rows.slice(0, 10).map((t, i) => {
+          return rows.slice(0, 5).map((t, i) => {
             const name =
               typeof t.name === 'object'
                 ? t.name['#text'] || JSON.stringify(t.name)
@@ -221,22 +225,19 @@ export default function Dashboard({ navigation }) {
             const date = t.date || t.Date || '';
 
             return (
-              <TouchableOpacity
+              <View
                 key={`row-${t?.id ?? i}`}
                 style={styles.taskRow}
-                activeOpacity={0.8}
-                onPress={() => onTapTask(t)}
               >
-                <Text style={styles.checkbox}>{t.done ? '☑' : '☐'}</Text>
                 <View style={styles.taskMain}>
                   <Text style={styles.taskName}>{`${name}   ${task}`}</Text>
                 </View>
                 <Text style={styles.taskDate}>{date}</Text>
-              </TouchableOpacity>
+              </View>
             );
           });
         })()}
-      </View>
+      </TouchableOpacity>
 
       {/* 
       JA 11/12/2025
