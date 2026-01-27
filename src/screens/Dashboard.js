@@ -10,6 +10,7 @@ import { fontSize, scale, verticalScale, moderateScale, SCREEN } from '../utils/
 import BarChart from '../components/BarChart';
 import { GetTaskList, UpdateTask, GetDashboard } from '../api';
 import { log } from '../utils/debug';
+import { removeAuthCode } from '../utils/storage';
 
 export default function Dashboard({ navigation }) {
   const [tasks, setTasks] = useState([]);
@@ -25,6 +26,25 @@ export default function Dashboard({ navigation }) {
 
   function closeMenu() {
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: true, easing: Easing.in(Easing.cubic) }).start(() => setMenuOpen(false));
+  }
+
+  async function handleLogout() {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await removeAuthCode();
+            navigation.navigate('Login');
+          } catch (e) {
+            log('Logout error', e);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
+        },
+      },
+    ]);
   }
 
   // 🔹 Load dashboard data from API
@@ -323,6 +343,10 @@ export default function Dashboard({ navigation }) {
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Feedback'); }}>
               <Text style={styles.menuText}>Feedback</Text>
             </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleLogout(); }}>
+              <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
+            </TouchableOpacity>
           </Animated.View>
         </View>
       )}
@@ -369,5 +393,6 @@ const styles = StyleSheet.create({
   menuClose: { alignSelf: 'flex-end', padding: moderateScale(6) },
   menuItem: { paddingVertical: verticalScale(10) },
   menuText: { fontSize: fontSize(14) },
+  logoutText: { color: '#e84b4b', fontWeight: '600' },
   divider: { height: 1, backgroundColor: '#eee', marginVertical: verticalScale(6) },
 });
