@@ -4,7 +4,7 @@
  */
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import { GetContactList, GetDashboard } from '../api';
+import { GetContactList } from '../api';
 import { log } from '../utils/debug';
 
 // Improved responsive scaling with tablet support
@@ -37,99 +37,15 @@ export default function Contacts({ navigation }){
     let mounted = true;
     async function load() {
       try {
-        // Try GetContactList first
         const res = await GetContactList();
         if (!mounted) return;
         log('Contacts: GetContactList response', res);
         
-        let loadedContacts = [];
-        
-        // Try to get contacts from GetContactList response
         if (res?.contacts && Array.isArray(res.contacts)) {
-          loadedContacts = res.contacts;
-        } else if (res?.parsed?.Selections?.Contact) {
-          // Extract contacts directly from parsed response if API returned them
-          const sels = res.parsed.Selections;
-          const contactArray = Array.isArray(sels.Contact) ? sels.Contact : [sels.Contact];
-          loadedContacts = contactArray.map(c => ({
-            id: String(c?.Serial || ''),
-            name: c?.Name || '',
-            status: c?.Status || '',
-            phone: c?.Phone || ''
-          }));
-        }
-        
-        // If GetContactList failed or returned no contacts, try GetDashboard as fallback
-        if (loadedContacts.length === 0) {
-          log('Contacts: GetContactList returned no contacts, trying GetDashboard as fallback');
-          const dashboardRes = await GetDashboard();
-          if (!mounted) return;
-          log('Contacts: GetDashboard response', dashboardRes);
-          
-          if (dashboardRes?.success && dashboardRes?.data) {
-            const allContacts = [];
-            
-            // Add BestPartner contacts
-            if (dashboardRes.data.bestPartner) {
-              const bestPartners = Array.isArray(dashboardRes.data.bestPartner) 
-                ? dashboardRes.data.bestPartner 
-                : [dashboardRes.data.bestPartner];
-              bestPartners.forEach(c => {
-                if (c) {
-                  allContacts.push({
-                    id: String(c.ContactSerial || c.contactSerial || c.Serial || ''),
-                    name: c.Name || c.name || '',
-                    status: 'Best Partner',
-                    phone: c.Phone || c.phone || ''
-                  });
-                }
-              });
-            }
-            
-            // Add Current contacts
-            if (dashboardRes.data.current) {
-              const current = Array.isArray(dashboardRes.data.current) 
-                ? dashboardRes.data.current 
-                : [dashboardRes.data.current];
-              current.forEach(c => {
-                if (c) {
-                  allContacts.push({
-                    id: String(c.ContactSerial || c.contactSerial || c.Serial || ''),
-                    name: c.Name || c.name || '',
-                    status: 'Current',
-                    phone: c.Phone || c.phone || ''
-                  });
-                }
-              });
-            }
-            
-            // Add Recent contacts
-            if (dashboardRes.data.recent) {
-              const recent = Array.isArray(dashboardRes.data.recent) 
-                ? dashboardRes.data.recent 
-                : [dashboardRes.data.recent];
-              recent.forEach(c => {
-                if (c) {
-                  allContacts.push({
-                    id: String(c.ContactSerial || c.contactSerial || c.Serial || ''),
-                    name: c.Name || c.name || '',
-                    status: 'Recent',
-                    phone: c.Phone || c.phone || ''
-                  });
-                }
-              });
-            }
-            
-            loadedContacts = allContacts;
-            log('Contacts: Loaded', loadedContacts.length, 'contacts from GetDashboard fallback');
-          }
-        }
-        
-        if (loadedContacts.length > 0) {
-          setContacts(loadedContacts);
-          log('Contacts: Total loaded', loadedContacts.length, 'contacts');
+          setContacts(res.contacts);
+          log('Contacts: Loaded', res.contacts.length, 'contacts');
         } else {
-          log('Contacts: No contacts found from either API');
+          log('Contacts: No contacts found');
         }
       } catch (e) {
         log('Contacts: Error loading contacts', e);

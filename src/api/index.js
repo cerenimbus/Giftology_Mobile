@@ -340,12 +340,12 @@ export async function UpdateTask({ Task, Status }) {
 }
 
 export async function GetContactList() {
-  const r = await callService('GetContactList');
+  const r = await callService('GetContactList', { Language: 'EN', MobileVersion: 1 }, null, { includeAcInKey: true });
   if (!r.success) return r;
-  const sels = r.parsed?.Selections || {};
+  const contactsData = r.parsed?.Contacts || {};
   let contacts = [];
-  if (sels?.Contact) {
-    const as = Array.isArray(sels.Contact) ? sels.Contact : [sels.Contact];
+  if (contactsData?.Contact) {
+    const as = Array.isArray(contactsData.Contact) ? contactsData.Contact : [contactsData.Contact];
     contacts = as.map(c => ({ id: String(c?.Serial || ''), name: c?.Name || '', status: c?.Status || '', phone: c?.Phone || '' }));
   }
   return { success: true, contacts };

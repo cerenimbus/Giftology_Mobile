@@ -81,3 +81,15 @@ export async function ensureDeviceId() {
     return null;
   }
 }
+
+// Clear all account-specific data on logout (like a fresh install)
+// Preserves device ID to maintain device identity
+export async function clearAccountData() {
+  try {
+    await AsyncStorage.removeItem(AUTH_KEY);
+    return true;
+  } catch (e) {
+    console.warn('clearAccountData error', e);
+    return false;
+  }
+}

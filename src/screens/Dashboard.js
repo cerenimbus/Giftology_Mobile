@@ -10,7 +10,7 @@ import { fontSize, scale, verticalScale, moderateScale, SCREEN } from '../utils/
 import BarChart from '../components/BarChart';
 import { GetTaskList, UpdateTask, GetDashboard } from '../api';
 import { log } from '../utils/debug';
-import { removeAuthCode } from '../utils/storage';
+import { clearAccountData } from '../utils/storage';
 
 export default function Dashboard({ navigation }) {
   const [tasks, setTasks] = useState([]);
@@ -36,7 +36,7 @@ export default function Dashboard({ navigation }) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await removeAuthCode();
+            await clearAccountData();
             navigation.navigate('Login');
           } catch (e) {
             log('Logout error', e);

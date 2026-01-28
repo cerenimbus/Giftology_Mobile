@@ -3,14 +3,15 @@
  * Task list screen displaying all tasks retrieved from GetTaskList API.
  */
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { GetTaskList } from '../api';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { GetTaskList, UpdateTask } from '../api';
 import { fontSize, verticalScale, moderateScale } from '../utils/responsive';
 import { log } from '../utils/debug';
 
 export default function Task({ navigation }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [updatingTaskId, setUpdatingTaskId] = useState(null);
 
   useEffect(() => {
     let mounted = true;
@@ -47,6 +48,43 @@ export default function Task({ navigation }) {
     };
   }, []);
 
+  const onTapTask = (task) => {
+    Alert.alert('Mark complete?', 'Are you sure you want to mark this task completed?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          try {
+            setUpdatingTaskId(task.id);
+            log('Task: Marking task complete', task.id);
+            const res = await UpdateTaskDone({ Task: task.id });
+            log('Task: UpdateTaskDone response', res);
+            if (res?.requestUrl) {
+              try {
+                log('Task: UpdateTaskDone URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+                log('Task: UpdateTaskDone URL (full):', res.requestUrl);
+              } catch (e) {}
+            }
+            if (res?.success) {
+              log('Task: Task marked complete, refreshing list');
+              const refreshRes = await GetTaskList();
+              if (refreshRes?.success) {
+                setTasks(refreshRes.tasks || []);
+              }
+            } else {
+              Alert.alert('Error', res?.message || 'Failed to mark task complete');
+            }
+          } catch (e) {
+            log('Task: UpdateTaskDone exception', e && e.stack ? e.stack : e);
+            Alert.alert('Error', 'Failed to mark task complete');
+          } finally {
+            setUpdatingTaskId(null);
+          }
+        },
+      },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroller}>
@@ -64,13 +102,19 @@ export default function Task({ navigation }) {
 
           {tasks.length > 0 ? (
             tasks.map((task, i) => (
-              <View key={`task-${task?.id ?? i}`} style={styles.taskRow}>
+              <TouchableOpacity 
+                key={`task-${task?.id ?? i}`} 
+                style={styles.taskRow}
+                onPress={() => onTapTask(task)}
+                disabled={updatingTaskId === task.id}
+                activeOpacity={0.7}
+              >
                 <View style={styles.taskMain}>
                   <Text style={styles.taskName}>{task.name || '—'}</Text>
                   {task.note && <Text style={styles.taskNote}>{task.note}</Text>}
                 </View>
                 <Text style={styles.taskDate}>{task.date || ''}</Text>
-              </View>
+              </TouchableOpacity>
             ))
           ) : !loading ? (
             <Text style={{ color: '#999', textAlign: 'center', paddingVertical: verticalScale(16) }}>
