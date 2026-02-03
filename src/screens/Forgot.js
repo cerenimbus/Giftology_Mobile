@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, Image, Alert } from 'react-native';
 import { ResetPassword } from '../api';
 import { scale, verticalScale, moderateScale, fontSize } from '../utils/responsive';
-import { log } from '../utils/debug';
+import { log, getMaskAC } from '../utils/debug';
 
 export default function Forgot({ navigation }){
   const [email, setEmail] = useState('');
@@ -28,7 +28,17 @@ export default function Forgot({ navigation }){
   log('Forgot: ResetPassword called for', email);
   const res = await ResetPassword({ Password: '', Email: email });
   log('Forgot: ResetPassword response', res);
-  if (res?.requestUrl) { try { log('Forgot: ResetPassword URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Forgot: ResetPassword URL (full):', res.requestUrl); } catch(e){} }
+  if (res?.requestUrl) { 
+    try { 
+      const maskAC = getMaskAC && getMaskAC();
+      if (maskAC) {
+        log('Forgot: ResetPassword URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
+        log('Forgot: ResetPassword URL (full):', res.requestUrl);
+      } else {
+        log('Forgot: ResetPassword URL (AC visible):', res.requestUrl);
+      }
+    } catch(e){} 
+  }
       Alert.alert('Reset Password', res?.message || 'Password reset requested', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
     } catch (e) {
       log('Forgot: exception', e && e.stack ? e.stack : e);

@@ -11,12 +11,13 @@
 import CryptoJS from 'crypto-js';
 import { XMLParser } from 'fast-xml-parser';
 import { getAuthCode, getDeviceId } from '../utils/storage';
-import { log, getDebugFlag, logError } from '../utils/debug';
+import { log, getDebugFlag, logError, getMaskAC } from '../utils/debug';
 import { handleApiTimeout } from '../utils/timeoutHandler';
 import Constants from 'expo-constants';
 
 // const BASE = 'https://radar.Giftology.com/RRService';
-const BASE = 'https://radar.Giftologygroup.com/RRService';
+// const BASE = 'https://radar.Giftologygroup.com/RRService';
+const BASE = 'https://ror.Giftologygroup.com/RRService';
 
 // Use shared debug flag from utils/debug
 // expose setters via utils/debug if needed
@@ -35,6 +36,7 @@ function sha1(str) {
 
 // RHCM 10/22/25 - build a GET URL for the named RRService function with query params
 // Avoids using URLSearchParams for Hermes compatibility in RN.
+// Uses encodeURIComponent for proper URL encoding of parameter values.
 // paramOrder: optional array specifying the order of parameters
 function buildUrl(functionName, params, paramOrder = null) {
   const parts = [];
@@ -42,9 +44,11 @@ function buildUrl(functionName, params, paramOrder = null) {
   
   keys.forEach((k) => {
     const v = params[k];
-    if (v !== undefined && v !== null) {
-      // parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
-      parts.push(`${k}=${v}`);
+    // Skip undefined, null, and empty strings (empty strings can cause issues with some servers)
+    if (v !== undefined && v !== null && v !== '') {
+      // URL-encode only the value, not the key (keys like DeviceID, Date, etc. don't need encoding)
+      // This matches the server's expected format as seen in browser requests
+      parts.push(`${k}=${encodeURIComponent(String(v))}`);
     }
   });
   const qs = parts.length ? `?${parts.join('&')}` : '';
@@ -71,32 +75,92 @@ async function callService(functionName, extraParams = {}, paramOrder = null, op
   const key = options.includeAcInKey ? sha1(deviceId + dateStr + ac) : sha1(deviceId + dateStr);
   // Build base params; respect options.skipAC to omit AC
   const base = { DeviceID: deviceId, Date: dateStr, Key: key };
-  if (!options.skipAC) base.AC = ac;
+  // Only include AC if it's not empty and not skipped
+  if (!options.skipAC && ac) base.AC = ac;
 
-  // If caller requested DeviceID to be URL-encoded, encode it here (affects only the base DeviceID)
-  if (options.encodeDeviceID && base.DeviceID) {
-    base.DeviceID = encodeURIComponent(base.DeviceID);
-  }
-
+  // Note: buildUrl now handles URL encoding for all parameters, including DeviceID
+  // The encodeDeviceID option is kept for backward compatibility but encoding is handled in buildUrl
   const params = Object.assign(base, extraParams);
   const url = buildUrl(functionName, params, paramOrder);
 
   try {
     const debugOn = getDebugFlag && getDebugFlag();
+    const maskAC = getMaskAC && getMaskAC();
     if (debugOn) {
       const masked = Object.assign({}, params);
-      if (masked.AC) masked.AC = mask(masked.AC);
-      if (masked.Key) masked.Key = mask(masked.Key);
-      if (masked.DeviceID) masked.DeviceID = mask(masked.DeviceID);
-      log(`[RRService] Request ${functionName} params:`, masked);
-      log(`[RRService] Request URL (masked AC):`, url.replace(/([&?]AC=)[^&]*/,'$1***'));
-      // Also provide the full URL in case caller wants to surface it (careful: contains AC)
-      log(`[RRService] Request URL (full):`, url);
+      if (maskAC) {
+        if (masked.AC) masked.AC = mask(masked.AC);
+        if (masked.Key) masked.Key = mask(masked.Key);
+        if (masked.DeviceID) masked.DeviceID = mask(masked.DeviceID);
+        log(`[RRService] Request ${functionName} params:`, masked);
+        log(`[RRService] Request URL (masked AC):`, url.replace(/([&?]AC=)[^&]*/,'$1***'));
+      } else {
+        // Show full params and URL when masking is disabled
+        log(`[RRService] Request ${functionName} params:`, params);
+        log(`[RRService] Request URL (full, AC visible):`, url);
+      }
+      // Always provide the full URL for reference (careful: contains AC when maskAC is false)
+      if (maskAC) {
+        log(`[RRService] Request URL (full):`, url);
+      }
     }
 
     // Use the shared fetchWithTimeout helper (default 30s timeout)
-    const res = await fetchWithTimeout(url, {}, 30000);
-    const txt = await res.text();
+    // Add headers to help with compatibility
+    const fetchOptions = {
+      method: 'GET',
+      headers: {
+        'Accept': '*/*',
+        'User-Agent': 'Giftology-Mobile-App',
+      },
+      // Don't cache requests
+      cache: 'no-store',
+    };
+    
+    if (getDebugFlag && getDebugFlag()) {
+      log(`[RRService] About to fetch ${functionName} with options:`, JSON.stringify(fetchOptions));
+    }
+    
+    let res;
+    try {
+      res = await fetchWithTimeout(url, fetchOptions, 30000);
+      if (getDebugFlag && getDebugFlag()) {
+        log(`[RRService] Fetch completed for ${functionName}, status:`, res.status, res.statusText);
+      }
+    } catch (fetchError) {
+      if (getDebugFlag && getDebugFlag()) {
+        logError(`[RRService] Fetch error for ${functionName}:`, fetchError);
+        logError(`[RRService] Fetch error details:`, {
+          name: fetchError?.name,
+          message: fetchError?.message,
+          stack: fetchError?.stack,
+        });
+      }
+      throw fetchError;
+    }
+    
+    // Check if response is OK before trying to read it
+    if (!res.ok) {
+      const errorText = await res.text().catch(() => 'Unable to read error response');
+      const errorMsg = `HTTP ${res.status} ${res.statusText}: ${errorText}`;
+      if (getDebugFlag && getDebugFlag()) {
+        logError(`[RRService] HTTP error for ${functionName}:`, errorMsg);
+      }
+      throw new Error(errorMsg);
+    }
+    
+    let txt;
+    try {
+      txt = await res.text();
+      if (getDebugFlag && getDebugFlag()) {
+        log(`[RRService] Response text length for ${functionName}:`, txt?.length || 0);
+      }
+    } catch (textError) {
+      if (getDebugFlag && getDebugFlag()) {
+        logError(`[RRService] Error reading response text for ${functionName}:`, textError);
+      }
+      throw new Error(`Failed to read response: ${textError?.message || String(textError)}`);
+    }
 
     if (getDebugFlag && getDebugFlag()) {
       log(`[RRService] Response for ${functionName}:`, txt);
@@ -116,12 +180,32 @@ async function callService(functionName, extraParams = {}, paramOrder = null, op
     return { success: result === 'success', errorNumber: err, message, raw: ri, parsed: ri, requestUrl: url };
   } catch (e) {
     const isTimeout = (e && (e.name === 'AbortError' || String(e).toLowerCase().includes('timeout')));
-    if (getDebugFlag && getDebugFlag()) logError && logError(`[RRService] Error calling ${functionName}:`, e && e.stack ? e.stack : e);
+    const errorDetails = {
+      name: e?.name,
+      message: e?.message,
+      stack: e?.stack,
+      toString: String(e),
+      url: url
+    };
+    
+    if (getDebugFlag && getDebugFlag()) {
+      logError(`[RRService] Error calling ${functionName}:`, errorDetails);
+      logError(`[RRService] Error type:`, typeof e);
+      logError(`[RRService] Error keys:`, Object.keys(e || {}));
+    }
+    
     if (isTimeout) {
       // Show a system modal and redirect to Login when user taps OK
       try { handleApiTimeout(); } catch (err) { /* ignore */ }
     }
-    return { success: false, errorNumber: isTimeout ? 408 : 100, message: isTimeout ? 'Request timed out' : String(e), requestUrl: url };
+    
+    // Provide more detailed error message
+    let errorMessage = String(e?.message || e || 'Unknown error');
+    if (errorMessage.includes('Network request failed') || errorMessage.includes('Failed to fetch')) {
+      errorMessage = `Network request failed. Please check your internet connection and try again. URL: ${url.substring(0, 100)}...`;
+    }
+    
+    return { success: false, errorNumber: isTimeout ? 408 : 100, message: errorMessage, requestUrl: url, errorDetails };
   }
 }
 
@@ -200,9 +284,10 @@ export async function AuthorizeDeviceID(payload) {
     params.Key = payload.Key   // SHA-1(DeviceID + Date + AuthorizationCode) - supplied by caller
   }
   
-  // URL encode DeviceID if provided in payload (per spec requirement)
+  // DeviceID encoding is now handled by buildUrl (all params are encoded)
+  // If DeviceID is provided in payload, include it; otherwise callService will add it
   if (deviceId) {
-    params.DeviceID = encodeURIComponent(deviceId)
+    params.DeviceID = deviceId
   }
 
   // Matches required API parameter order (based on working example):
@@ -219,12 +304,12 @@ export async function AuthorizeDeviceID(payload) {
   ]
 
   // For AuthorizeDeviceID, we don't want AC in the URL (not in spec)
-  // If DeviceID wasn't provided, callService will add it from getDeviceId() and we'll encode it there
-  return callService('AuthorizeDeviceID', params, paramOrder, { skipAC: true, encodeDeviceID: !deviceId })
+  // DeviceID encoding is now handled by buildUrl
+  return callService('AuthorizeDeviceID', params, paramOrder, { skipAC: true })
 }
 
 export async function GetDashboard() {
-  const r = await callService('GetDashboard');
+  const r = await callService('GetDashboard', { MobileVersion: '1.0.10' }, null, { includeAcInKey: true }); // RHCM 2/3/26 - MobileVersion is required and added the AC to be hashed for the key parameter
   if (!r.success) return r;
 
   const sel = r.parsed?.Selections || {};
@@ -336,7 +421,27 @@ export async function GetTask({ Task }) {
 }
 
 export async function UpdateTask({ Task, Status }) {
-  return callService('UpdateTask', { Task, Status });
+  // Per spec: DeviceID (URL encoded), Date, Key = SHA1(DeviceID + Date + AuthorizationCode),
+  // AC, Language, MobileVersion, Task (serial), Status (1=done, 0=not done)
+  const params = {
+    Task,
+    Status,
+    Language: 'EN',
+    MobileVersion: '1.0.10',
+  };
+
+  const paramOrder = [
+    'DeviceID',
+    'Date',
+    'Key',
+    'AC',
+    'Language',
+    'MobileVersion',
+    'Task',
+    'Status',
+  ];
+
+  return callService('UpdateTask', params, paramOrder, { includeAcInKey: true });
 }
 
 export async function GetContactList() {

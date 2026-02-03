@@ -9,7 +9,7 @@ import { HamburgerIcon, BackIcon } from '../components/Icons';
 import { fontSize, scale, verticalScale, moderateScale, SCREEN } from '../utils/responsive';
 import BarChart from '../components/BarChart';
 import { GetTaskList, UpdateTask, GetDashboard } from '../api';
-import { log } from '../utils/debug';
+import { log, getMaskAC } from '../utils/debug';
 import { clearAccountData } from '../utils/storage';
 
 export default function Dashboard({ navigation }) {
@@ -78,8 +78,13 @@ export default function Dashboard({ navigation }) {
       log('Task: GetTaskList response', res);
       if (res?.requestUrl) {
         try {
-          log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
-          log('Task: GetTaskList URL (full):', res.requestUrl);
+          const maskAC = getMaskAC && getMaskAC();
+          if (maskAC) {
+            log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+            log('Task: GetTaskList URL (full):', res.requestUrl);
+          } else {
+            log('Task: GetTaskList URL (AC visible):', res.requestUrl);
+          }
         } catch (e) {}
       }
       if (res?.success) setTasks(res.tasks || []);
@@ -105,8 +110,13 @@ export default function Dashboard({ navigation }) {
             log('Task: UpdateTask response', res);
             if (res?.requestUrl) {
               try {
-                log('Task: UpdateTask URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
-                log('Task: UpdateTask URL (full):', res.requestUrl);
+                const maskAC = getMaskAC && getMaskAC();
+                if (maskAC) {
+                  log('Task: UpdateTask URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+                  log('Task: UpdateTask URL (full):', res.requestUrl);
+                } else {
+                  log('Task: UpdateTask URL (AC visible):', res.requestUrl);
+                }
               } catch (e) {}
             }
             await load();

@@ -6,7 +6,7 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert, Dimensions } from 'react-native';
 import { BackIcon } from '../components/Icons';
 import { UpdateFeedback } from '../api';
-import { log } from '../utils/debug';
+import { log, getMaskAC } from '../utils/debug';
 
 import { SCREEN, scale, verticalScale, moderateScale, fontSize } from '../utils/responsive';
 
@@ -38,7 +38,17 @@ export default function Feedback({ navigation }){
       log('Feedback: submitting', { name, email: email ? email.replace(/(.{2}).+(@.+)/,'$1***$2') : '', phone });
       const res = await UpdateFeedback({ Name: name, Email: email, Phone: phone, Comment: comment, Response: 0, Update: 0 });
       log('Feedback: response', res);
-      if (res?.requestUrl) { try { log('Feedback: UpdateFeedback URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); log('Feedback: UpdateFeedback URL (full):', res.requestUrl); } catch(e){} }
+      if (res?.requestUrl) { 
+        try { 
+          const maskAC = getMaskAC && getMaskAC();
+          if (maskAC) {
+            log('Feedback: UpdateFeedback URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
+            log('Feedback: UpdateFeedback URL (full):', res.requestUrl);
+          } else {
+            log('Feedback: UpdateFeedback URL (AC visible):', res.requestUrl);
+          }
+        } catch(e){} 
+      }
       if (res?.success) {
         navigation.navigate('Main');
       } else {

@@ -6,7 +6,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { GetTaskList, UpdateTask } from '../api';
 import { fontSize, verticalScale, moderateScale } from '../utils/responsive';
-import { log } from '../utils/debug';
+import { log, getMaskAC } from '../utils/debug';
 
 export default function Task({ navigation }) {
   const [tasks, setTasks] = useState([]);
@@ -24,9 +24,14 @@ export default function Task({ navigation }) {
         
         log('Task: GetTaskList response', res);
         if (res?.requestUrl) {
-          try { 
-            log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
-            log('Task: GetTaskList URL (full):', res.requestUrl); 
+          try {
+            const maskAC = getMaskAC && getMaskAC();
+            if (maskAC) {
+              log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
+              log('Task: GetTaskList URL (full):', res.requestUrl);
+            } else {
+              log('Task: GetTaskList URL (AC visible):', res.requestUrl);
+            }
           } catch (e) {}
         }
         
@@ -57,12 +62,18 @@ export default function Task({ navigation }) {
           try {
             setUpdatingTaskId(task.id);
             log('Task: Marking task complete', task.id);
-            const res = await UpdateTaskDone({ Task: task.id });
-            log('Task: UpdateTaskDone response', res);
+            // Use UpdateTask API to mark the task as done (Status = 1)
+            const res = await UpdateTask({ Task: task.id, Status: 1 });
+            log('Task: UpdateTask response', res);
             if (res?.requestUrl) {
               try {
-                log('Task: UpdateTaskDone URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
-                log('Task: UpdateTaskDone URL (full):', res.requestUrl);
+                const maskAC = getMaskAC && getMaskAC();
+                if (maskAC) {
+                  log('Task: UpdateTask URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***'));
+                  log('Task: UpdateTask URL (full):', res.requestUrl);
+                } else {
+                  log('Task: UpdateTask URL (AC visible):', res.requestUrl);
+                }
               } catch (e) {}
             }
             if (res?.success) {
@@ -75,7 +86,7 @@ export default function Task({ navigation }) {
               Alert.alert('Error', res?.message || 'Failed to mark task complete');
             }
           } catch (e) {
-            log('Task: UpdateTaskDone exception', e && e.stack ? e.stack : e);
+            log('Task: UpdateTask exception', e && e.stack ? e.stack : e);
             Alert.alert('Error', 'Failed to mark task complete');
           } finally {
             setUpdatingTaskId(null);

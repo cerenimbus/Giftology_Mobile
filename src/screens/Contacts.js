@@ -62,7 +62,7 @@ export default function Contacts({ navigation }){
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main')}>
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>Contacts</Text>
+      <Text style={styles.title}>Potential Partners</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         <View style={styles.table}>
           <View style={[styles.row, styles.headerRow]}>

@@ -24,7 +24,7 @@ import {
 import { AuthorizeUser } from '../api';
 import { EyeIcon, EyeOffIcon } from '../components/Icons';
 import { setAuthCode, getAuthCode } from '../utils/storage';
-import { log, setDebugFlag, getDebugFlag } from '../utils/debug';
+import { log, setDebugFlag, getDebugFlag, getMaskAC } from '../utils/debug';
 import { fontSize, scale, verticalScale, moderateScale } from '../utils/responsive';
 
 export default function Login({ navigation }) {
@@ -53,13 +53,17 @@ export default function Login({ navigation }) {
       // log the response and the request URL used
       log('Login: AuthorizeUser response', res);
       if (res?.requestUrl) {
-        // masked AC in URL
         try {
-          const masked = res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***');
-          log('Login: AuthorizeUser URL (masked):', masked);
-          log('Login: AuthorizeUser URL (full):', res.requestUrl);
+          const maskAC = getMaskAC && getMaskAC();
+          if (maskAC) {
+            const masked = res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***');
+            log('Login: AuthorizeUser URL (masked):', masked);
+            log('Login: AuthorizeUser URL (full):', res.requestUrl);
+          } else {
+            log('Login: AuthorizeUser URL (AC visible):', res.requestUrl);
+          }
         } catch (e) {
-          log('Login: error masking URL', e && e.stack ? e.stack : e);
+          log('Login: error processing URL', e && e.stack ? e.stack : e);
         }
       }
       if (res?.success) {
