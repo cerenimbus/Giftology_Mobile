@@ -40,18 +40,14 @@ export default function Help({ navigation }) {
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.contentCard}>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Lorem ipsum dolor</Text>
+            <Text style={styles.sectionTitle}>ROR Giftology</Text>
             <Text style={styles.sectionText}>
-              Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae
-              pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
-              aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
-              Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class
-              aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
+              The ROR system helps users to identify and track customer relationships that result in referrals.  Using the Giftology process you can increase revenues through increased referrals.
             </Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Lorem ipsum</Text>
+          {/* <View style={styles.section}>
+            <Text style={styles.sectionTitle}>ROR</Text>
             <Text style={styles.sectionText}>
               Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae
               pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
@@ -59,7 +55,7 @@ export default function Help({ navigation }) {
               Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class
               aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
             </Text>
-          </View>
+          </View> */}
         </View>
       </ScrollView>
     </View>
