@@ -2,7 +2,7 @@
   "expo": {
     "name": "ROR",
     "slug": "relationshipradar",
-    "version": "1.0.14",
+    "version": "1.0.15",
     "platforms": [
       "ios",
       "android",
@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "com.cerenimbus.relationshipradar",
-      "versionCode": 4
+      "versionCode": 5
     },
     "assetBundlePatterns": [
       "**/*"
