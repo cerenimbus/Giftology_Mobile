@@ -16,7 +16,7 @@
     },
     "android": {
       "package": "com.cerenimbus.relationshipradar",
-      "versionCode": 3
+      "versionCode": 4
     },
     "assetBundlePatterns": [
       "**/*"
