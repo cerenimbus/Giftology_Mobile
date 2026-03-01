@@ -93,3 +93,28 @@ export async function clearAccountData() {
     return false;
   }
 }
+
+// OBP 03/01/26 - API Base URL storage for data source selection
+const API_BASE_URL_KEY = 'api_base_url';
+
+// OBP 03/01/26 - persist the API base URL selected by user in Select_Datasource screen
+export async function setApiBaseUrl(url) {
+  try {
+    await AsyncStorage.setItem(API_BASE_URL_KEY, url);
+    return true;
+  } catch (e) {
+    console.warn('setApiBaseUrl error', e);
+    return false;
+  }
+}
+
+// OBP 03/01/26 - retrieve the persisted API base URL (or null if not set)
+export async function getApiBaseUrl() {
+  try {
+    const v = await AsyncStorage.getItem(API_BASE_URL_KEY);
+    return v;
+  } catch (e) {
+    console.warn('getApiBaseUrl error', e);
+    return null;
+  }
+}

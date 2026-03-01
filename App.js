@@ -14,6 +14,9 @@ import Verify from './src/screens/Verify';
 import Loading from './src/screens/Loading';
 import Task from './src/screens/Task';
 import Preview from './src/screens/Preview';
+import Revenue_List from './src/screens/Revenue_List';
+import Revenue_Entry from './src/screens/Revenue_Entry';
+import Select_Datasource from './src/screens/Select_Datasource';
 import { navigationRef } from './src/navigation/NavigationService';
 
 const Stack = createNativeStackNavigator();
@@ -36,6 +39,9 @@ export default function App() {
           <Stack.Screen name="Forgot" component={Forgot} />
           <Stack.Screen name="Verify" component={Verify} />
           <Stack.Screen name="Loading" component={Loading} />
+          <Stack.Screen name="RevenueList" component={Revenue_List} />
+          <Stack.Screen name="RevenueEntry" component={Revenue_Entry} />
+          <Stack.Screen name="SelectDatasource" component={Select_Datasource} />
         </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaView>
