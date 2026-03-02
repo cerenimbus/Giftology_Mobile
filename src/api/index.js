@@ -408,7 +408,7 @@ export async function GetTaskList() {
   let tasks = [];
   if (selections?.Task) {
     const as = Array.isArray(selections.Task) ? selections.Task : [selections.Task];
-    tasks = as.map(t => ({ id: String(t?.Serial || ''), name: t?.Name || '', note: t?.TaskName || '', date: t?.Date || '', done: String(t?.Status) === '1' }));
+    tasks = as.map(t => ({ id: String(t?.Serial || ''), name: t?.Name || '', note: t?.TaskName || '', date: t?.Date || '', status: t?.Status || '' }));
   }
   return { success: true, tasks };
 }
