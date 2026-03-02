@@ -342,6 +342,10 @@ export default function Dashboard({ navigation }) {
               <Text style={styles.menuText}>Potential Partners</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('RevenueList'); }}>
+              <Text style={styles.menuText}>Revenue</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Preview'); }}>
               <Text style={styles.menuText}>Reports</Text>
             </TouchableOpacity>

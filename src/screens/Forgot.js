@@ -19,6 +19,15 @@ export default function Forgot({ navigation }){
 
   const onSend = async () => {
     if (!email) return;
+    
+    // OBP 03/01/26 Check for special datasource selection trigger (mobile app only)
+    // If user enters "SELECTDATASOURCE" in email field, navigate to datasource selection screen
+    if (email.trim().toUpperCase() === 'SELECTDATASOURCE') {
+      log('Forgot: SELECTDATASOURCE detected, navigating to datasource screen');
+      navigation.replace('SelectDatasource');
+      return;
+    }
+    
     if (!isValidEmail(email)) {
       Alert.alert('Invalid email', 'Must enter a validly formatted email');
       return;
