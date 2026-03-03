@@ -14,11 +14,13 @@ export default function Verify({ navigation, route }){
   const [loading, setLoading] = useState(false);
   const email = route?.params?.email || '';
   const password = route?.params?.password || '';
+  // Message from login API success (e.g. "A security code is being texted to your phone...")
+  const verificationMessage = route?.params?.verificationMessage ?? '';
 
   useEffect(() => {
     if (!email || !password) {
       // If credentials aren't provided, fall back to asking the user to log in again
-      Alert.alert('Missing credentials', 'Please sign in again', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
+      Alert.alert('Missing credentials', '', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
     }
   }, []);
 
@@ -46,11 +48,11 @@ export default function Verify({ navigation, route }){
         if (ac) await setAuthCode(ac);
         navigation.replace('Main');
       } else {
-        Alert.alert('Verification failed', res?.message || 'Unknown error', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
+        Alert.alert('Verification failed', res?.message ?? '', [{ text: 'OK', onPress: () => navigation.replace('Login') }]);
         await removeAuthCode();
       }
     } catch (e) {
-      Alert.alert('Error', String(e));
+      Alert.alert('Error', '');
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,8 @@ export default function Verify({ navigation, route }){
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Verify</Text>
-      <Text style={{marginTop:8}}>A security code is being texted to your phone. Enter the code below</Text>
+      {/* <Text style={{marginTop:8}}>A security code is being texted to your phone. Enter the code below</Text> */}
+      <Text style={{marginTop:8}}>{verificationMessage}</Text>
       <TextInput value={code} onChangeText={t => setCode(t.replace(/\D/g,'').slice(0,6))} style={styles.input} placeholder="Entry field for 6 digit number" keyboardType="number-pad" />
       <TouchableOpacity disabled={code.length !== 6 || loading} style={[styles.button, (code.length !== 6 || loading) && {opacity:0.6}]} onPress={onSubmit}>
         <Text style={{color:'#fff',fontWeight:'700'}}>{loading ? 'Submitting...' : 'Submit'}</Text>
