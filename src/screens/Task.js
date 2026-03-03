@@ -122,7 +122,10 @@ export default function Task({ navigation }) {
               >
                 <View style={styles.taskMain}>
                   <Text style={styles.taskName}>{task.name || '—'}</Text>
-                  {task.note && <Text style={styles.taskNote}>{task.note}</Text>}
+                 
+                </View>
+                <View style={styles.taskMain}>
+                {task.status && <Text style={styles.taskNote}>{task.status}</Text>}
                 </View>
                 <Text style={styles.taskDate}>{task.date || ''}</Text>
               </TouchableOpacity>

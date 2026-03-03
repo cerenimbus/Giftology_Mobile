@@ -10,14 +10,22 @@
  */
 import CryptoJS from 'crypto-js';
 import { XMLParser } from 'fast-xml-parser';
-import { getAuthCode, getDeviceId } from '../utils/storage';
+import { getAuthCode, getDeviceId, getApiBaseUrl } from '../utils/storage';
 import { log, getDebugFlag, logError, getMaskAC } from '../utils/debug';
 import { handleApiTimeout } from '../utils/timeoutHandler';
 import Constants from 'expo-constants';
 
 // const BASE = 'https://radar.Giftology.com/RRService';
 // const BASE = 'https://radar.Giftologygroup.com/RRService';
-const BASE = 'https://ror.Giftologygroup.com/RRService';
+// OBP 03/01/26 - BASE is now dynamic and loaded from storage (default to production)
+const DEFAULT_BASE = 'https://ror.giftologygroup.com/RRService';
+let BASE = DEFAULT_BASE;
+
+// OBP 03/01/26 - helper to get the current base URL (checks storage first)
+async function getBaseUrl() {
+  const storedUrl = await getApiBaseUrl();
+  return storedUrl || DEFAULT_BASE;
+}
 
 // Use shared debug flag from utils/debug
 // expose setters via utils/debug if needed
@@ -38,7 +46,9 @@ function sha1(str) {
 // Avoids using URLSearchParams for Hermes compatibility in RN.
 // Uses encodeURIComponent for proper URL encoding of parameter values.
 // paramOrder: optional array specifying the order of parameters
-function buildUrl(functionName, params, paramOrder = null) {
+// OBP 03/01/26 - updated to use dynamic base URL
+async function buildUrl(functionName, params, paramOrder = null) {
+  const base = await getBaseUrl();
   const parts = [];
   const keys = paramOrder || Object.keys(params || {});
   
@@ -52,7 +62,7 @@ function buildUrl(functionName, params, paramOrder = null) {
     }
   });
   const qs = parts.length ? `?${parts.join('&')}` : '';
-  return `${BASE}/${functionName}.php${qs}`;
+  return `${base}/${functionName}.php${qs}`;
 }
 
 // Helper to get device ID without dashes
@@ -408,7 +418,7 @@ export async function GetTaskList() {
   let tasks = [];
   if (selections?.Task) {
     const as = Array.isArray(selections.Task) ? selections.Task : [selections.Task];
-    tasks = as.map(t => ({ id: String(t?.Serial || ''), name: t?.Name || '', note: t?.TaskName || '', date: t?.Date || '', done: String(t?.Status) === '1' }));
+    tasks = as.map(t => ({ id: String(t?.Serial || ''), name: t?.Name || '', note: t?.TaskName || '', date: t?.Date || '', status: t?.Status || '' }));
   }
   return { success: true, tasks };
 }
@@ -475,6 +485,43 @@ export async function GetHelp({ topic }) {
 
 export async function UpdateFeedback({ Name, Email, Phone, Response, Update, Comment }) {
   return callService('UpdateFeedback', { Name, Email, Phone, Response, Update, Comment });
+}
+
+// OBP 03/01/26 - Get revenue list for user's contacts
+export async function GetRevenueList() {
+  const r = await callService('GetRevenueList');
+  if (!r.success) return r;
+  
+  const selections = r.parsed?.Selections || {};
+  let revenues = [];
+  
+  if (selections?.Revenue) {
+    const revArray = Array.isArray(selections.Revenue) ? selections.Revenue : [selections.Revenue];
+    revenues = revArray.map(rev => ({
+      serial: String(rev?.Serial || ''),
+      contact: rev?.Contact || '',
+      amount: rev?.Amount || '',
+      date: rev?.Date || ''
+    }));
+  }
+  
+  return { success: true, revenues };
+}
+
+// OBP 03/01/26 - Add or update a revenue record for a contact
+// Action: "add" or "update"
+// Revenue: integer serial number (0 for add, actual serial for update)
+// Contact: integer serial number for the contact
+// RevenueDate: date in format MM/DD/YYYY
+// Amount: integer or decimal value
+export async function UpdateRevenue({ Action, Revenue, Contact, RevenueDate, Amount }) {
+  return callService('UpdateRevenue', { 
+    Action, 
+    Revenue, 
+    Contact, 
+    RevenueDate, 
+    Amount 
+  });
 }
 
 // RHCM 11/21/25 - fetch wrapper with timeout support.
