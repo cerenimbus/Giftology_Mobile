@@ -1,14 +1,21 @@
+/* RHCM 10/22/25
+ * src/components/LineChart.js
+ * Small, dependency-free line chart used for simple visualizations in the app.
+ * Implemented with absolute-positioned Views to avoid adding an SVG dependency
+ * which would require native linking and prebuild steps.
+ */
 import React, { useState } from 'react';
 import { View, StyleSheet } from 'react-native';
+import { verticalScale, moderateScale } from '../utils/responsive';
 
-// Lightweight line chart using native Views (no SVG/native deps).
+// RHCM 10/22/25 - Lightweight line chart using native Views (no SVG/native deps).
 // Props:
 // - data: number[]
 // - height: number
 // - color: string
 // - strokeWidth: number
 // - pointRadius: number
-export default function LineChart({ data = [], height = 60, color = '#e84b4b', strokeWidth = 2, pointRadius = 3 }) {
+export default function LineChart({ data = [], height = verticalScale(60), color = '#e84b4b', strokeWidth = moderateScale(2), pointRadius = moderateScale(3) }) {
   const [layout, setLayout] = useState({ width: 0, height });
 
   if (!data || data.length === 0) return <View style={{ height }} />;

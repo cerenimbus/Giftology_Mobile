@@ -1,5 +1,12 @@
+/* RHCM 10/22/25
+ * src/screens/Preview.js
+ * A paged preview of all screens used for visual QA and demo purposes.
+ * Renders the app screens in a horizontal FlatList and supplies a dummy
+ * navigation object for non-interactive preview pages.
+ */
 import React, { useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, FlatList, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
+import { SCREEN, verticalScale, fontSize } from '../utils/responsive';
 import Loading from './Loading';
 import Login from './Login';
 import Verify from './Verify';
@@ -10,7 +17,7 @@ import Help from './Help';
 import Feedback from './Feedback';
 import Contacts from './Contacts';
 
-const { width, height } = Dimensions.get('window');
+const { WIDTH: width, HEIGHT: height } = SCREEN;
 
 const SCREENS = [
   { key: 'Loading', component: Loading, interactive: false },
@@ -87,6 +94,6 @@ export default function Preview({ navigation }) {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#fff' },
   page: { width, height },
-  hint: { position: 'absolute', bottom: 18, left: 0, right: 0, alignItems: 'center' },
-  hintText: { color: '#888', fontSize: 12 }
+  hint: { position: 'absolute', bottom: verticalScale(18), left: 0, right: 0, alignItems: 'center' },
+  hintText: { color: '#888', fontSize: fontSize(12) }
 });

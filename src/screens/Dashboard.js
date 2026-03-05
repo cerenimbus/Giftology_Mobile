@@ -1,60 +1,380 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Animated, Easing } from 'react-native';
+/* RHCM 10/22/25
+ * src/screens/Task.js
+ * Task list and simple task completion. Loads tasks with GetTaskList and
+ * calls UpdateTask to mark completion.
+ */
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Animated, Easing, Modal } from 'react-native';
 import { HamburgerIcon, BackIcon } from '../components/Icons';
-import { GetDashboard } from '../api';
+import { fontSize, scale, verticalScale, moderateScale, SCREEN } from '../utils/responsive';
+import BarChart from '../components/BarChart';
+import { GetTaskList, UpdateTask, GetDashboard } from '../api';
+import { log, getMaskAC } from '../utils/debug';
+import { clearAccountData } from '../utils/storage';
 
 export default function Dashboard({ navigation }) {
+  const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null); // holds summary data
+  const [dashboardError, setDashboardError] = useState(null); // holds API error message
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [data, setData] = useState(null);
-
   const anim = useRef(new Animated.Value(0)).current;
 
   function openMenu() {
     setMenuOpen(true);
     Animated.timing(anim, { toValue: 1, duration: 220, useNativeDriver: true, easing: Easing.out(Easing.cubic) }).start();
   }
+
   function closeMenu() {
     Animated.timing(anim, { toValue: 0, duration: 180, useNativeDriver: true, easing: Easing.in(Easing.cubic) }).start(() => setMenuOpen(false));
   }
 
+  async function handleLogout() {
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await clearAccountData();
+            navigation.navigate('Login');
+          } catch (e) {
+            log('Logout error', e);
+            Alert.alert('Error', 'Failed to logout. Please try again.');
+          }
+        },
+      },
+    ]);
+  }
+
+  // 🔹 Load dashboard data from API
   useEffect(() => {
     let mounted = true;
-    async function load() {
+    async function loadDashboard() {
       try {
         const res = await GetDashboard();
         if (!mounted) return;
-        if (res?.success) setData(res.data);
+        if (res?.success) {
+          setDashboardData(res.data);
+          setDashboardError(null);
+          setErrorModalVisible(false);
+          log('Task: GetDashboard data', res.data);
+        } else {
+          const errorMsg = res?.message || 'Failed to load dashboard data';
+          setDashboardError(errorMsg);
+          setErrorModalVisible(true);
+          log('Task: GetDashboard failed', res);
+        }
       } catch (e) {
-        // ignore
+        setDashboardError('Error loading dashboard data');
+        log('Task: GetDashboard error', e);
       }
     }
-    load();
+    loadDashboard();
     return () => {
       mounted = false;
     };
   }, []);
 
+  // 🔹 Load task list from API
+  const load = async () => {
+    setLoading(true);
+    try {
+      const res = await GetTaskList();
+      log('Task: GetTaskList response', res);
+      if (res?.requestUrl) {
+        try {
+          const maskAC = getMaskAC && getMaskAC();
+          if (maskAC) {
+            log('Task: GetTaskList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+            log('Task: GetTaskList URL (full):', res.requestUrl);
+          } else {
+            log('Task: GetTaskList URL (AC visible):', res.requestUrl);
+          }
+        } catch (e) {}
+      }
+      if (res?.success) setTasks(res.tasks || []);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const onTapTask = (task) => {
+    Alert.alert('Mark complete?', 'Are you sure you want to mark this task completed?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Yes',
+        onPress: async () => {
+          setLoading(true);
+          try {
+            log('Task: update requested', task.id);
+            const res = await UpdateTask({ Task: task.id, Status: 1 });
+            log('Task: UpdateTask response', res);
+            if (res?.requestUrl) {
+              try {
+                const maskAC = getMaskAC && getMaskAC();
+                if (maskAC) {
+                  log('Task: UpdateTask URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/, '$1***'));
+                  log('Task: UpdateTask URL (full):', res.requestUrl);
+                } else {
+                  log('Task: UpdateTask URL (AC visible):', res.requestUrl);
+                }
+              } catch (e) {}
+            }
+            await load();
+          } finally {
+            setLoading(false);
+          }
+        },
+      },
+    ]);
+  };
+
+  // Helper for safe values
+  const safe = (v) => (v !== undefined && v !== null ? v : '—');
+
+  // Extract dashboard fields (handle null gracefully)
+  const bestPartners = dashboardData?.bestPartner || [];
+  const currentRunners = dashboardData?.current || [];
+  const recentPartners = dashboardData?.recent || [];
+  const outcomes = dashboardData?.outcomes || {};
+
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroller}>
-        <Text style={styles.title}>Dashboard</Text>
 
         <TouchableOpacity onPress={openMenu} style={styles.menuButton} accessibilityLabel="Open menu">
           <HamburgerIcon size={22} color="#333" />
         </TouchableOpacity>
 
-        <TouchableOpacity style={[styles.card, { marginTop: 16 }]} onPress={() => navigation.navigate('Task')}>
-          <Text style={styles.cardTitle}>Task</Text>
-          {(data?.tasksSummary || []).slice(0, 3).map((t, i) => (
-            <View key={i} style={styles.rowSpace}>
-              <Text>{t.name}</Text>
-              <Text style={{ color: '#999' }}>{t.date}</Text>
-            </View>
-          ))}
-        </TouchableOpacity>
+        <Text style={styles.title}>Dashboard</Text>
 
-        {/* DOV summary removed from dashboard per specification */}
+      {/* 
+      JA 11/12/2025
+      ✅ Best Referral Partner (from GetDashboard) */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Best Referral Partner</Text>
+        {dashboardError ? (
+          <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
+        ) : bestPartners?.length ? (
+            bestPartners.slice(0, 4).map((p, i) => (
+              <View key={`best-${p?.id ?? i}`} style={styles.smallRow}>
+              <Text style={styles.partner}>{safe(p.Name || p.name)}</Text>
+              <Text style={styles.partnerAmount}>{safe(p.Amount || p.amount)}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
+        )}
+      </View>
+
+      {/* 
+      JA 11/12/2025
+      ✅ Current Runaway Relationships (from GetDashboard) */}
+      {/* RHCM 23/12/2025
+      *Renamed "Runaway" to "Runway" */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Current Runway Relationships</Text> {/* RHCM 23/12/2025 */}
+        {dashboardError ? (
+          <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
+        ) : currentRunners?.length ? (
+            currentRunners.slice(0, 4).map((c, i) => (
+              <View key={`cur-${c?.id ?? i}`} style={styles.smallRow}>
+              <Text>{safe(c.Name || c.name)}</Text>
+              <Text style={styles.phone}>{safe(c.Phone || c.phone)}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
+        )}
+      </View>
+        {/* JA 11/12/2025
+        ✅ Dates & DOV (using total + chart placeholder until expanded) */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Dates & DOV</Text>
+        <View style={styles.pillsRow}>
+          <View style={styles.pill}><Text>Total DOV</Text><Text style={styles.pillNumber}>{safe(dashboardData?.dovTotal)}</Text></View>
+          <View style={styles.pill}><Text>Introductions</Text><Text style={styles.pillNumber}>{safe(outcomes?.introductions)}</Text></View>
+          <View style={styles.pill}><Text>Referrals</Text><Text style={styles.pillNumber}>{safe(outcomes?.referrals)}</Text></View>
+        </View>
+
+        <Text style={styles.dovGraphTitle}>Total DOV Activities</Text>
+        <View style={styles.dovBox}>
+          <View style={styles.dovChartPlaceholder}>
+            {dashboardData?.dovChartData && dashboardData.dovChartData.length > 0 ? (
+              <BarChart 
+                data={dashboardData.dovChartData} 
+                height={60} 
+                color={'#e84b4b'} 
+              />
+            ) : (
+              <Text style={{ color: '#999' }}>No data</Text>
+            )}
+          </View>
+          <Text style={styles.dovTotal}>{safe(dashboardData?.dovTotal)}</Text>
+        </View>
+      </View>
+
+      {/* 
+      EF 11/12/25
+      display tasks list from the api
+      */}
+      {/* Task list card (shows dashboard summary first, then full task list fallback) */}
+      <TouchableOpacity 
+        style={styles.card}
+        activeOpacity={0.7}
+        onPress={() => navigation.navigate('Task')}
+      >
+        <Text style={styles.cardTitleSmall}>Task</Text>
+        {loading && <ActivityIndicator style={{ marginVertical: verticalScale(12) }} />}
+
+        {(() => {
+          // 🔹 Prefer Dashboard summary tasks → fallback to GetTaskList
+          const rows =
+            dashboardData?.tasksSummary?.length
+              ? dashboardData.tasksSummary
+              : tasks.length
+              ? tasks
+              : [];
+
+          if (!rows.length && !loading) {
+            return (
+              <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>
+                No Task
+              </Text>
+            );
+          }
+
+          return rows.slice(0, 5).map((t, i) => {
+            const name =
+              typeof t.name === 'object'
+                ? t.name['#text'] || JSON.stringify(t.name)
+                : t.name || '—';
+
+            const task = t.TaskName || t.task || t.note || '';
+            const date = t.date || t.Date || '';
+
+            return (
+              <View
+                key={`row-${t?.id ?? i}`}
+                style={styles.taskRow}
+              >
+                <View style={styles.taskMain}>
+                  <Text style={styles.taskName}>{`${name}   ${task}`}</Text>
+                </View>
+                <Text style={styles.taskDate}>{date}</Text>
+              </View>
+            );
+          });
+        })()}
+      </TouchableOpacity>
+
+      {/* 
+      JA 11/12/2025
+      ✅ Recently Identified Partners */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Recently Identified Potential Partners</Text>
+        {dashboardError ? (
+          <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
+        ) : recentPartners?.length ? (
+          recentPartners.slice(0, 4).map((r, i) => (
+            <View key={`recent-${r?.id ?? i}`} style={styles.smallRow}>
+              <Text>{safe(r.Name || r.name)}</Text>
+              <Text style={styles.phone}>{safe(r.Phone || r.phone)}</Text>
+            </View>
+          ))
+        ) : (
+          <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
+        )}
+      </View>
+
+      {/* JA 11/12/2025 
+      ✅ Outcomes */}
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Outcomes</Text>
+        <View style={styles.outcomesRow}><Text>Introductions</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.introductions)}</Text></View>
+        <View style={styles.outcomesRow}><Text>Referrals</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.referrals)}</Text></View>
+        <View style={styles.outcomesRow}><Text>Referral Partners</Text><Text style={styles.outcomeNumber}>{safe(outcomes?.partners)}</Text></View>
+
+        <View style={styles.revenueBox}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: fontSize(14), color: '#333', fontWeight: '700', marginBottom: verticalScale(10) }}>Referral Revenue Generated</Text>
+            <View style={styles.smallChart}>
+              {dashboardData?.revenueChartData && dashboardData.revenueChartData.length > 0 ? (
+                <BarChart 
+                  data={dashboardData.revenueChartData} 
+                  height={44} 
+                  color={'#e84b4b'} 
+                />
+              ) : (
+                <Text style={{ color: '#999' }}>No data</Text>
+              )}
+            </View>
+          </View>
+          <Text style={styles.revenueAmount}>{safe(dashboardData?.revenueAmount || '—')}</Text>
+        </View>
+      </View>
+
+      <View style={{ height: verticalScale(40) }} />
       </ScrollView>
+
+      {/* Error Modal */}
+      <Modal
+        visible={errorModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setErrorModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Dashboard Error</Text>
+          <Text style={styles.modalMessage}>
+            {dashboardError}
+            {'\n\nIf retry does not work please email support@giftologygroup.com and include a screenshot of this message if possible.\n\nError # 100'}
+          </Text>
+          <View style={styles.modalButtonsRow}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.dismissButton]}
+              onPress={() => setErrorModalVisible(false)}
+            >
+              <Text style={styles.dismissButtonText}>Dismiss</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.retryButton]}
+              onPress={async () => {
+                setErrorModalVisible(false);
+                // Retry the dashboard load
+                try {
+                  const res = await GetDashboard();
+                  if (res?.success) {
+                    setDashboardData(res.data);
+                    setDashboardError(null);
+                    log('Task: GetDashboard retry success', res.data);
+                  } else {
+                    const errorMsg = res?.message || 'Failed to load dashboard data';
+                    setDashboardError(errorMsg);
+                    setErrorModalVisible(true);
+                    log('Task: GetDashboard retry failed', res);
+                  }
+                } catch (e) {
+                  setDashboardError('Error loading dashboard data');
+                  setErrorModalVisible(true);
+                  log('Task: GetDashboard retry error', e);
+                }
+              }}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        </View>
+      </Modal>
 
       {menuOpen && (
         <View style={styles.menuOverlay} pointerEvents="box-none">
@@ -68,24 +388,25 @@ export default function Dashboard({ navigation }) {
             <TouchableOpacity onPress={closeMenu} style={styles.menuClose}>
               <BackIcon size={18} color="#333" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Main'); }}>
-              <Text style={styles.menuText}>Dashboard</Text>
-            </TouchableOpacity>
             <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Main'); }}>
-              <Text style={styles.menuText}>Reports</Text>
-            </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Main'); }}>
-              <Text style={styles.menuText}>Dates & DOV</Text>
-            </TouchableOpacity>
-            <View style={styles.divider} />
-            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Contacts'); }}>
-              <Text style={styles.menuText}>Contacts</Text>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Task'); }}>
+              <Text style={styles.menuText}>Tasks</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Preview'); }}>
-              <Text style={styles.menuText}>Preview Screens</Text>
+              <Text style={styles.menuText}>DOV & Dates</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Contacts'); }}>
+              <Text style={styles.menuText}>Potential Partners</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('RevenueList'); }}>
+              <Text style={styles.menuText}>Revenue</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Preview'); }}>
+              <Text style={styles.menuText}>Reports</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Help'); }}>
@@ -94,6 +415,10 @@ export default function Dashboard({ navigation }) {
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Feedback'); }}>
               <Text style={styles.menuText}>Feedback</Text>
+            </TouchableOpacity>
+            <View style={styles.divider} />
+            <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); handleLogout(); }}>
+              <Text style={[styles.menuText, styles.logoutText]}>Logout</Text>
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -104,23 +429,53 @@ export default function Dashboard({ navigation }) {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  scroller: { padding: 20, paddingBottom: 120 },
-  title: { fontSize: 36, color: '#e84b4b', fontWeight: '700', marginTop: 10 },
-  menuButton: { position: 'absolute', right: 20, top: 28, padding: 8, backgroundColor: '#fff', borderRadius: 8, elevation: 2 },
-  card: { backgroundColor: '#fff', padding: 16, borderRadius: 14, marginTop: 16, shadowColor: '#000', shadowOpacity: 0.04, elevation: 2 },
-  cardTitle: { fontWeight: '700', marginBottom: 12 },
-  rowSpace: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
-  pill: { backgroundColor: '#fdeaea', borderRadius: 8, padding: 10, flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
-  big: { fontSize: 20, fontWeight: '700' },
-  tabBar: { position: 'absolute', left: 0, right: 0, bottom: 0, height: 70, backgroundColor: '#fff', flexDirection: 'row', justifyContent: 'space-around', alignItems: 'center', borderTopWidth: 1, borderColor: '#f0f0f0' },
-  tab: { alignItems: 'center' },
+  scroller: { padding: moderateScale(18), paddingBottom: moderateScale(120) },
+  page: { padding: moderateScale(18), paddingBottom: moderateScale(120), backgroundColor: '#fff' },
+  title: { fontSize: fontSize(28), color: '#e84b4b', fontWeight: '700', marginTop: verticalScale(18) },
+  card: { backgroundColor: '#fff', borderRadius: moderateScale(14), padding: moderateScale(12), marginTop: verticalScale(16), shadowColor: '#000', shadowOpacity: 0.04, elevation: 3 },
+  cardTitle: { fontWeight: '700', marginBottom: verticalScale(6), fontSize: fontSize(14) },
+  graphLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: verticalScale(6), marginBottom: verticalScale(8) },
+  graphTitle: { color: '#999', fontSize: fontSize(12) },
+  graphTitleRight: { color: '#999', fontSize: fontSize(12), textAlign: 'right' },
+  cardTitleSmall: { fontWeight: '700', marginBottom: verticalScale(10), fontSize: fontSize(12), color: '#333' },
+  smallRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(8), borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  partner: { color: '#333' },
+  partnerAmount: { color: '#111', fontWeight: '700' },
+  phone: { color: '#666' },
+  pillsRow: { marginTop: verticalScale(6) },
+  pill: { backgroundColor: '#fdeaea', borderRadius: moderateScale(10), padding: moderateScale(8), marginVertical: verticalScale(6), flexDirection: 'row', justifyContent: 'space-between' },
+  pillNumber: { fontWeight: '700' },
+  dovGraphTitle: { color: '#333', fontSize: fontSize(14), marginTop: verticalScale(10), marginBottom: verticalScale(6), fontWeight: '700' },
+  dovBox: { flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(6), justifyContent: 'space-between' },
+  dovChartPlaceholder: { backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', height: verticalScale(60), width: Math.min(scale(180), SCREEN.WIDTH * 0.45), justifyContent: 'center', alignItems: 'center', borderRadius: moderateScale(8) },
+  dovTotal: { fontSize: fontSize(16), color: '#999', marginLeft: moderateScale(10) },
+  taskRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: verticalScale(10), borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  checkbox: { width: moderateScale(28), color: '#999' },
+  taskMain: { flex: 1 },
+  taskName: { fontSize: fontSize(14) },
+  taskDate: { color: '#999' },
+  outcomesRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: verticalScale(10), borderBottomWidth: 1, borderColor: '#f6f6f6' },
+  outcomeNumber: { fontWeight: '700', fontSize: fontSize(16) },
+  revenueBox: { flexDirection: 'row', alignItems: 'center', marginTop: verticalScale(12), justifyContent: 'space-between' },
+  smallChart: { height: verticalScale(44), width: Math.min(scale(140), SCREEN.WIDTH * 0.35), backgroundColor: '#fff', borderWidth: 1, borderColor: '#f0eaea', borderRadius: moderateScale(8), justifyContent: 'center', alignItems: 'center' },
+  revenueAmount: { fontSize: fontSize(18), fontWeight: '700', color: '#999', marginLeft: moderateScale(10) },
+  menuButton: { position: 'absolute', right: moderateScale(16), top: verticalScale(12), padding: moderateScale(8), backgroundColor: '#fff', borderRadius: moderateScale(8), elevation: 2, zIndex: 30 },
   menuOverlay: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, justifyContent: 'flex-start', alignItems: 'flex-end' },
   backdrop: { position: 'absolute', left: 0, right: 0, top: 0, bottom: 0, backgroundColor: 'transparent' },
-  menuCard: { width: 300, marginTop: 80, marginRight: 12, backgroundColor: '#fff', borderRadius: 12, padding: 12, elevation: 8, shadowColor: '#000', shadowOpacity: 0.08 },
-  menuClose: { alignSelf: 'flex-end', padding: 6 },
-  menuItem: { paddingVertical: 12 },
-  menuText: { fontSize: 16 },
-  divider: { height: 1, backgroundColor: '#eee', marginVertical: 6 }
+  menuCard: { width: Math.min(scale(300), SCREEN.WIDTH * 0.75), marginTop: verticalScale(80), marginRight: moderateScale(12), backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(12), elevation: 8, shadowColor: '#000', shadowOpacity: 0.08 },
+  menuClose: { alignSelf: 'flex-end', padding: moderateScale(6) },
+  menuItem: { paddingVertical: verticalScale(10) },
+  menuText: { fontSize: fontSize(14) },
+  logoutText: { color: '#e84b4b', fontWeight: '600' },
+  divider: { height: 1, backgroundColor: '#eee', marginVertical: verticalScale(6) },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(24), width: Math.min(scale(300), SCREEN.WIDTH * 0.8), shadowColor: '#000', shadowOpacity: 0.25, elevation: 5 },
+  modalTitle: { fontSize: fontSize(18), fontWeight: '700', color: '#e84b4b', marginBottom: verticalScale(12), textAlign: 'center' },
+  modalMessage: { fontSize: fontSize(14), color: '#333', marginBottom: verticalScale(20), textAlign: 'center', lineHeight: 20 },
+  modalButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  modalButton: { borderRadius: moderateScale(8), paddingVertical: verticalScale(12), paddingHorizontal: moderateScale(24), alignSelf: 'center', minWidth: scale(100) },
+  retryButton: { backgroundColor: '#28a745' }, // Green
+  dismissButton: { backgroundColor: '#e84b4b' }, // Red
+  retryButtonText: { color: '#fff', fontSize: fontSize(14), fontWeight: '600' },
+  dismissButtonText: { color: '#fff', fontSize: fontSize(14), fontWeight: '600' },
 });
-
-

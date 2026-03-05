@@ -1,6 +1,11 @@
+/* RHCM 10/22/25
+ * src/screens/Loading.js
+ * Minimal startup/loading screen. Ensures a device id exists and routes the
+ * user either to Login (no auth code) or Main (already authorized).
+ */
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { getAuthCode } from '../utils/storage';
+import { getAuthCode, ensureDeviceId } from '../utils/storage';
 
 export default function Loading({ navigation }){
   useEffect(() => {
@@ -8,6 +13,8 @@ export default function Loading({ navigation }){
     (async () => {
       // small delay to show the spinner
       await new Promise(r => setTimeout(r, 800));
+      // ensure a device id is set before any API calls
+      await ensureDeviceId();
       const code = await getAuthCode();
       if (!mounted) return;
       if (code) navigation.replace('Main');
@@ -18,7 +25,7 @@ export default function Loading({ navigation }){
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Relationship Radar</Text>
+      <Text style={styles.title}>ROR</Text>
       <Text style={{marginTop:8}}>Powered by:</Text>
       <Image source={require('../../assets/logo.png')} style={{width:300,height:110,marginTop:12}} resizeMode="contain" />
       <ActivityIndicator size="large" color="#e84b4b" style={{marginTop:40}} />
