@@ -1,10 +1,12 @@
 /* RHCM 10/22/25
  * src/screens/Help.js
- * Help Screen - displays formatted help content with a clean, readable layout.
+ * Help Screen - displays formatted help content fetched from GetHelp API.
  */
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { BackIcon } from '../components/Icons';
+import { GetHelp } from '../api';
+import { log } from '../utils/debug';
 
 // Get screen dimensions for responsive design
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -21,11 +23,42 @@ const moderateScale = (size, factor = 0.5) => size + (scale - 1) * size * factor
 const verticalScale = (size) => (SCREEN_HEIGHT / BASE_HEIGHT) * size;
 
 export default function Help({ navigation }) {
+  const [helpContent, setHelpContent] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let mounted = true;
+    async function loadHelp() {
+      try {
+        const res = await GetHelp({ topic: 'general' });
+        if (!mounted) return;
+        
+        log('Help: GetHelp response', res);
+        
+        if (res?.success) {
+          setHelpContent(res?.data?.content || res?.data || 'No help content available');
+          setError(null);
+        } else {
+          setError(res?.message || 'Failed to load help content');
+          log('Help: GetHelp failed', res);
+        }
+      } catch (e) {
+        log('Help: GetHelp error', e);
+        setError('Error loading help content');
+      } finally {
+        setLoading(false);
+      }
+    }
+    
+    loadHelp();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <View style={styles.container}>
-      {/*EF 11/25/25
-      Display Texts just like in the figma
-      */}
       {/* Header (no gradient) */}
       <View style={styles.header}>
         <View style={styles.headerRow}>
@@ -39,23 +72,17 @@ export default function Help({ navigation }) {
       {/* Scrollable content inside a rounded card */}
       <ScrollView contentContainerStyle={styles.scroll}>
         <View style={styles.contentCard}>
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>ROR Giftology</Text>
-            <Text style={styles.sectionText}>
-              The ROR system helps users to identify and track customer relationships that result in referrals.  Using the Giftology process you can increase revenues through increased referrals.
+          {loading && <ActivityIndicator size="large" color="#e84b4b" style={{ marginVertical: verticalScale(20) }} />}
+          {error && (
+            <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: verticalScale(20) }}>
+              {error}
             </Text>
-          </View>
-
-          {/* <View style={styles.section}>
-            <Text style={styles.sectionTitle}>ROR</Text>
-            <Text style={styles.sectionText}>
-              Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae
-              pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu
-              aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas.
-              Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class
-              aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.
-            </Text>
-          </View> */}
+          )}
+          {!loading && !error && (
+            <View style={styles.section}>
+              <Text style={styles.sectionText}>{helpContent}</Text>
+            </View>
+          )}
         </View>
       </ScrollView>
     </View>
@@ -105,12 +132,6 @@ const styles = StyleSheet.create({
   },
 
   section: { marginBottom: verticalScale(18) },
-  sectionTitle: {
-    fontWeight: '700',
-    fontSize: moderateScale(22),
-    marginBottom: verticalScale(8),
-    color: '#222',
-  },
   sectionText: {
     fontSize: moderateScale(18),
     lineHeight: moderateScale(22),

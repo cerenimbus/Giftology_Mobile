@@ -4,7 +4,7 @@
  * calls UpdateTask to mark completion.
  */
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Animated, Easing } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, ActivityIndicator, Animated, Easing, Modal } from 'react-native';
 import { HamburgerIcon, BackIcon } from '../components/Icons';
 import { fontSize, scale, verticalScale, moderateScale, SCREEN } from '../utils/responsive';
 import BarChart from '../components/BarChart';
@@ -16,6 +16,8 @@ export default function Dashboard({ navigation }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [dashboardData, setDashboardData] = useState(null); // holds summary data
+  const [dashboardError, setDashboardError] = useState(null); // holds API error message
+  const [errorModalVisible, setErrorModalVisible] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const anim = useRef(new Animated.Value(0)).current;
 
@@ -56,11 +58,17 @@ export default function Dashboard({ navigation }) {
         if (!mounted) return;
         if (res?.success) {
           setDashboardData(res.data);
+          setDashboardError(null);
+          setErrorModalVisible(false);
           log('Task: GetDashboard data', res.data);
         } else {
+          const errorMsg = res?.message || 'Failed to load dashboard data';
+          setDashboardError(errorMsg);
+          setErrorModalVisible(true);
           log('Task: GetDashboard failed', res);
         }
       } catch (e) {
+        setDashboardError('Error loading dashboard data');
         log('Task: GetDashboard error', e);
       }
     }
@@ -152,7 +160,9 @@ export default function Dashboard({ navigation }) {
       ✅ Best Referral Partner (from GetDashboard) */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Best Referral Partner</Text>
-        {bestPartners?.length ? (
+        {dashboardError ? (
+          <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
+        ) : bestPartners?.length ? (
             bestPartners.slice(0, 4).map((p, i) => (
               <View key={`best-${p?.id ?? i}`} style={styles.smallRow}>
               <Text style={styles.partner}>{safe(p.Name || p.name)}</Text>
@@ -160,12 +170,7 @@ export default function Dashboard({ navigation }) {
             </View>
           ))
         ) : (
-          <>
-            <View style={styles.smallRow}><Text>Jack Miller</Text><Text>$36,000</Text></View>
-            <View style={styles.smallRow}><Text>Jhon de rosa</Text><Text>$22,425</Text></View>
-            <View style={styles.smallRow}><Text>Martin Mayers</Text><Text>$17,089</Text></View>
-            <View style={styles.smallRow}><Text>Kent Mayers</Text><Text>$11,298</Text></View>
-          </>
+          <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
         )}
       </View>
 
@@ -176,7 +181,9 @@ export default function Dashboard({ navigation }) {
       *Renamed "Runaway" to "Runway" */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Current Runway Relationships</Text> {/* RHCM 23/12/2025 */}
-        {currentRunners?.length ? (
+        {dashboardError ? (
+          <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
+        ) : currentRunners?.length ? (
             currentRunners.slice(0, 4).map((c, i) => (
               <View key={`cur-${c?.id ?? i}`} style={styles.smallRow}>
               <Text>{safe(c.Name || c.name)}</Text>
@@ -184,12 +191,7 @@ export default function Dashboard({ navigation }) {
             </View>
           ))
         ) : (
-          <>
-            <View style={styles.smallRow}><Text>Lucas Mendoza</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-            <View style={styles.smallRow}><Text>Ava Torres</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-            <View style={styles.smallRow}><Text>Ethan Brooks</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-            <View style={styles.smallRow}><Text>Sophia Ramirez</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-          </>
+          <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
         )}
       </View>
         {/* JA 11/12/2025
@@ -205,11 +207,15 @@ export default function Dashboard({ navigation }) {
         <Text style={styles.dovGraphTitle}>Total DOV Activities</Text>
         <View style={styles.dovBox}>
           <View style={styles.dovChartPlaceholder}>
-            <BarChart 
-              data={dashboardData?.dovChartData && dashboardData.dovChartData.length > 0 ? dashboardData.dovChartData : [40, 80, 160, 120, 200]} 
-              height={60} 
-              color={'#e84b4b'} 
-            />
+            {dashboardData?.dovChartData && dashboardData.dovChartData.length > 0 ? (
+              <BarChart 
+                data={dashboardData.dovChartData} 
+                height={60} 
+                color={'#e84b4b'} 
+              />
+            ) : (
+              <Text style={{ color: '#999' }}>No data</Text>
+            )}
           </View>
           <Text style={styles.dovTotal}>{safe(dashboardData?.dovTotal)}</Text>
         </View>
@@ -274,7 +280,9 @@ export default function Dashboard({ navigation }) {
       ✅ Recently Identified Partners */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>Recently Identified Potential Partners</Text>
-        {recentPartners?.length ? (
+        {dashboardError ? (
+          <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
+        ) : recentPartners?.length ? (
           recentPartners.slice(0, 4).map((r, i) => (
             <View key={`recent-${r?.id ?? i}`} style={styles.smallRow}>
               <Text>{safe(r.Name || r.name)}</Text>
@@ -282,12 +290,7 @@ export default function Dashboard({ navigation }) {
             </View>
           ))
         ) : (
-          <>
-            <View style={styles.smallRow}><Text>Charly Oman</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-            <View style={styles.smallRow}><Text>Jhon de rosa</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-            <View style={styles.smallRow}><Text>Martin Mayers</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-            <View style={styles.smallRow}><Text>Kent Mayers</Text><Text style={styles.phone}>(225) 555-0118</Text></View>
-          </>
+          <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
         )}
       </View>
 
@@ -303,19 +306,75 @@ export default function Dashboard({ navigation }) {
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: fontSize(14), color: '#333', fontWeight: '700', marginBottom: verticalScale(10) }}>Referral Revenue Generated</Text>
             <View style={styles.smallChart}>
-              <BarChart 
-                data={dashboardData?.revenueChartData && dashboardData.revenueChartData.length > 0 ? dashboardData.revenueChartData : [40, 80, 120, 60, 160, 100]} 
-                height={44} 
-                color={'#e84b4b'} 
-              />
+              {dashboardData?.revenueChartData && dashboardData.revenueChartData.length > 0 ? (
+                <BarChart 
+                  data={dashboardData.revenueChartData} 
+                  height={44} 
+                  color={'#e84b4b'} 
+                />
+              ) : (
+                <Text style={{ color: '#999' }}>No data</Text>
+              )}
             </View>
           </View>
-          <Text style={styles.revenueAmount}>$105,000</Text>
+          <Text style={styles.revenueAmount}>{safe(dashboardData?.revenueAmount || '—')}</Text>
         </View>
       </View>
 
       <View style={{ height: verticalScale(40) }} />
       </ScrollView>
+
+      {/* Error Modal */}
+      <Modal
+        visible={errorModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setErrorModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>Dashboard Error</Text>
+          <Text style={styles.modalMessage}>
+            {dashboardError}
+            {'\n\nIf retry does not work please email support@giftologygroup.com and include a screenshot of this message if possible.\n\nError # 100'}
+          </Text>
+          <View style={styles.modalButtonsRow}>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.retryButton]}
+              onPress={async () => {
+                setErrorModalVisible(false);
+                // Retry the dashboard load
+                try {
+                  const res = await GetDashboard();
+                  if (res?.success) {
+                    setDashboardData(res.data);
+                    setDashboardError(null);
+                    log('Task: GetDashboard retry success', res.data);
+                  } else {
+                    const errorMsg = res?.message || 'Failed to load dashboard data';
+                    setDashboardError(errorMsg);
+                    setErrorModalVisible(true);
+                    log('Task: GetDashboard retry failed', res);
+                  }
+                } catch (e) {
+                  setDashboardError('Error loading dashboard data');
+                  setErrorModalVisible(true);
+                  log('Task: GetDashboard retry error', e);
+                }
+              }}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modalButton, styles.dismissButton]}
+              onPress={() => setErrorModalVisible(false)}
+            >
+              <Text style={styles.dismissButtonText}>Dismiss</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+        </View>
+      </Modal>
 
       {menuOpen && (
         <View style={styles.menuOverlay} pointerEvents="box-none">
@@ -409,4 +468,14 @@ const styles = StyleSheet.create({
   menuText: { fontSize: fontSize(14) },
   logoutText: { color: '#e84b4b', fontWeight: '600' },
   divider: { height: 1, backgroundColor: '#eee', marginVertical: verticalScale(6) },
+  modalOverlay: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' },
+  modalContent: { backgroundColor: '#fff', borderRadius: moderateScale(12), padding: moderateScale(24), width: Math.min(scale(300), SCREEN.WIDTH * 0.8), shadowColor: '#000', shadowOpacity: 0.25, elevation: 5 },
+  modalTitle: { fontSize: fontSize(18), fontWeight: '700', color: '#e84b4b', marginBottom: verticalScale(12), textAlign: 'center' },
+  modalMessage: { fontSize: fontSize(14), color: '#333', marginBottom: verticalScale(20), textAlign: 'center', lineHeight: 20 },
+  modalButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
+  modalButton: { borderRadius: moderateScale(8), paddingVertical: verticalScale(12), paddingHorizontal: moderateScale(24), alignSelf: 'center', minWidth: scale(100) },
+  retryButton: { backgroundColor: '#e84b4b' },
+  dismissButton: { backgroundColor: '#666' },
+  retryButtonText: { color: '#fff', fontSize: fontSize(14), fontWeight: '600' },
+  dismissButtonText: { color: '#fff', fontSize: fontSize(14), fontWeight: '600' },
 });

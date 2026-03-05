@@ -1,6 +1,6 @@
 /* RHCM 10/22/25
  * src/screens/Profile.js
- * Minimal profile screen used as a placeholder in the demo app.
+ * Minimal profile screen - displays avatar placeholder.
  */
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
@@ -10,7 +10,7 @@ export default function Profile(){
   return (
     <View style={styles.container}>
       <Image source={require('../../assets/User.png')} style={styles.avatar} />
-      <Text style={styles.name}>Demo User</Text>
+      <Text style={styles.name}>User Profile</Text>
     </View>
   )
 }

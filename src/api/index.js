@@ -91,7 +91,10 @@ async function callService(functionName, extraParams = {}, paramOrder = null, op
   // Note: buildUrl now handles URL encoding for all parameters, including DeviceID
   // The encodeDeviceID option is kept for backward compatibility but encoding is handled in buildUrl
   const params = Object.assign(base, extraParams);
-  const url = buildUrl(functionName, params, paramOrder);
+  // buildUrl is async because it may fetch the base URL from storage;
+  // callers must await its result or they get a Promise object instead of a
+  // string, which later causes `url.substring is not a function` errors.
+  const url = await buildUrl(functionName, params, paramOrder);
 
   try {
     const debugOn = getDebugFlag && getDebugFlag();
@@ -132,21 +135,40 @@ async function callService(functionName, extraParams = {}, paramOrder = null, op
     }
     
     let res;
-    try {
-      res = await fetchWithTimeout(url, fetchOptions, 30000);
-      if (getDebugFlag && getDebugFlag()) {
-        log(`[RRService] Fetch completed for ${functionName}, status:`, res.status, res.statusText);
+    let retryCount = 0;
+    const maxRetries = 1; // Retry once on timeout
+    
+    while (retryCount <= maxRetries) {
+      try {
+        res = await fetchWithTimeout(url, fetchOptions, 30000);
+        if (getDebugFlag && getDebugFlag()) {
+          log(`[RRService] Fetch completed for ${functionName}${retryCount > 0 ? ` (retry ${retryCount})` : ''}, status:`, res.status, res.statusText);
+        }
+        break; // Success, exit retry loop
+      } catch (fetchError) {
+        const isTimeout = (fetchError && (fetchError.name === 'AbortError' || String(fetchError).toLowerCase().includes('timeout')));
+        
+        if (getDebugFlag && getDebugFlag()) {
+          logError(`[RRService] Fetch error for ${functionName}${retryCount > 0 ? ` (retry ${retryCount})` : ''}:`, fetchError);
+          logError(`[RRService] Fetch error details:`, {
+            name: fetchError?.name,
+            message: fetchError?.message,
+            stack: fetchError?.stack,
+          });
+        }
+        
+        // If this is a timeout and we haven't exceeded max retries, try again
+        if (isTimeout && retryCount < maxRetries) {
+          retryCount++;
+          if (getDebugFlag && getDebugFlag()) {
+            log(`[RRService] Timeout occurred, retrying ${functionName} (attempt ${retryCount + 1}/${maxRetries + 1})`);
+          }
+          continue; // Retry the fetch
+        }
+        
+        // Either not a timeout, or we've exhausted retries
+        throw fetchError;
       }
-    } catch (fetchError) {
-      if (getDebugFlag && getDebugFlag()) {
-        logError(`[RRService] Fetch error for ${functionName}:`, fetchError);
-        logError(`[RRService] Fetch error details:`, {
-          name: fetchError?.name,
-          message: fetchError?.message,
-          stack: fetchError?.stack,
-        });
-      }
-      throw fetchError;
     }
     
     // Check if response is OK before trying to read it
@@ -205,8 +227,13 @@ async function callService(functionName, extraParams = {}, paramOrder = null, op
     }
     
     if (isTimeout) {
-      // Show a system modal and redirect to Login when user taps OK
-      try { handleApiTimeout(); } catch (err) { /* ignore */ }
+      // Show a system modal with retry option
+      try { 
+        handleApiTimeout(() => {
+          // Retry callback - re-execute the same API call
+          return callService(functionName, params, paramOrder);
+        });
+      } catch (err) { /* ignore */ }
     }
     
     // Provide more detailed error message
@@ -266,7 +293,9 @@ export async function AuthorizeUser(payload) {
     'MobileVersion'
   ];
   
-  return callService('AuthorizeUser', params, paramOrder);
+  // AC must not be sent on the initial login request; ensure it is
+  // skipped regardless of what might be stored.
+  return callService('AuthorizeUser', params, paramOrder, { skipAC: true });
 }
 
 export async function AuthorizeDeviceID(payload) {
