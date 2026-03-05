@@ -340,6 +340,12 @@ export default function Dashboard({ navigation }) {
           </Text>
           <View style={styles.modalButtonsRow}>
             <TouchableOpacity
+              style={[styles.modalButton, styles.dismissButton]}
+              onPress={() => setErrorModalVisible(false)}
+            >
+              <Text style={styles.dismissButtonText}>Dismiss</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
               style={[styles.modalButton, styles.retryButton]}
               onPress={async () => {
                 setErrorModalVisible(false);
@@ -364,12 +370,6 @@ export default function Dashboard({ navigation }) {
               }}
             >
               <Text style={styles.retryButtonText}>Retry</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modalButton, styles.dismissButton]}
-              onPress={() => setErrorModalVisible(false)}
-            >
-              <Text style={styles.dismissButtonText}>Dismiss</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -474,8 +474,8 @@ const styles = StyleSheet.create({
   modalMessage: { fontSize: fontSize(14), color: '#333', marginBottom: verticalScale(20), textAlign: 'center', lineHeight: 20 },
   modalButtonsRow: { flexDirection: 'row', justifyContent: 'space-between' },
   modalButton: { borderRadius: moderateScale(8), paddingVertical: verticalScale(12), paddingHorizontal: moderateScale(24), alignSelf: 'center', minWidth: scale(100) },
-  retryButton: { backgroundColor: '#e84b4b' },
-  dismissButton: { backgroundColor: '#666' },
+  retryButton: { backgroundColor: '#28a745' }, // Green
+  dismissButton: { backgroundColor: '#e84b4b' }, // Red
   retryButtonText: { color: '#fff', fontSize: fontSize(14), fontWeight: '600' },
   dismissButtonText: { color: '#fff', fontSize: fontSize(14), fontWeight: '600' },
 });
