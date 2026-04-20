@@ -62,26 +62,39 @@ export default function Contacts({ navigation }){
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate('Main')}>
         <Text style={styles.backText}>← Back</Text>
       </TouchableOpacity>
-      <Text style={styles.title}>Potential Partners</Text>
+      <Text style={styles.title}>Contacts</Text>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        <View style={styles.table}>
-          <View style={[styles.row, styles.headerRow]}>
-            <Text style={[styles.name, styles.headerText]}>Name</Text>
-            <Text style={[styles.status, styles.headerText]}>Status</Text>
-            <Text style={[styles.phone, styles.headerText]}>Phone</Text>
-          </View>
-          {contacts.length > 0 ? (
-            contacts.map((item, i) => (
-                <View key={`contact-${item.id || 'unknown'}-${i}`} style={styles.row}>
-                <Text style={styles.name}>{item.name || ''}</Text>
-                <Text style={styles.status}>{item.status || ''}</Text>
-                <Text style={styles.phone}>{item.phone || ''}</Text>
+        {contacts.length > 0 ? (
+          contacts.map((item, i) => (
+            <View key={`contact-${item.id || 'unknown'}-${i}`}>
+              <View style={styles.card}>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>Name</Text>
+                  <Text style={styles.fieldValue}>{item.name || ''}</Text>
+                </View>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>Status</Text>
+                  <Text style={styles.fieldValue}>{item.status || ''}</Text>
+                </View>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>Phone</Text>
+                  <Text style={styles.fieldValue}>{item.phone || ''}</Text>
+                </View>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>Intro</Text>
+                  <Text style={styles.fieldValue}>{item.introduction || ''}</Text>
+                </View>
+                <View style={styles.fieldRow}>
+                  <Text style={styles.fieldLabel}>Referral</Text>
+                  <Text style={styles.fieldValue}>{item.referral || ''}</Text>
+                </View>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No contacts found</Text>
-          )}
-        </View>
+              {i < contacts.length - 1 && <View style={styles.separator} />}
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyText}>No contacts found</Text>
+        )}
       </ScrollView>
     </View>
   )
@@ -113,46 +126,29 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: spacingScale(20)
   },
-  table: {
-    backgroundColor: '#fff',
-    margin: spacingScale(12),
-    borderRadius: moderateScale(12, 0.3),
-    padding: spacingScale(8),
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOpacity: 0.03
+  card: {
+    paddingVertical: spacingScale(12),
+    paddingHorizontal: spacingScale(16)
   },
-  row: {
+  fieldRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    borderBottomWidth: 1,
-    borderColor: '#f0f0f0',
-    paddingVertical: spacingScale(18),
-    paddingHorizontal: spacingScale(6)
+    paddingVertical: spacingScale(4)
   },
-  headerRow: {
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-    paddingVertical: spacingScale(12)
-  },
-  headerText: {
+  fieldLabel: {
+    fontSize: fontScale(14),
     fontWeight: '700',
-    fontSize: fontScale(16)
+    width: spacingScale(80),
+    color: '#333'
   },
-  name: {
-    fontSize: fontScale(16),
+  fieldValue: {
+    fontSize: fontScale(14),
+    color: '#555',
     flex: 1
   },
-  status: {
-    fontSize: fontScale(16),
-    flex: 1,
-    textAlign: 'center'
-  },
-  phone: {
-    fontSize: fontScale(16),
-    color: '#555',
-    flex: 1,
-    textAlign: 'right'
+  separator: {
+    height: 1,
+    backgroundColor: '#ddd',
+    marginHorizontal: spacingScale(16)
   },
   emptyText: {
     padding: spacingScale(20),

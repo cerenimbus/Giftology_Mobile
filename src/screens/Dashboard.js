@@ -283,12 +283,14 @@ export default function Dashboard({ navigation }) {
         {dashboardError ? (
           <Text style={{ color: '#e84b4b', textAlign: 'center', paddingVertical: 8 }}>{dashboardError}</Text>
         ) : recentPartners?.length ? (
-          recentPartners.slice(0, 4).map((r, i) => (
-            <View key={`recent-${r?.id ?? i}`} style={styles.smallRow}>
-              <Text>{safe(r.Name || r.name)}</Text>
-              <Text style={styles.phone}>{safe(r.Phone || r.phone)}</Text>
-            </View>
-          ))
+          <ScrollView style={styles.recentPartnersScroll} nestedScrollEnabled>
+            {recentPartners.map((r, i) => (
+              <View key={`recent-${r?.id ?? i}`} style={styles.smallRow}>
+                <Text>{safe(r.Name || r.name)}</Text>
+                <Text style={styles.phone}>{safe(r.Phone || r.phone)}</Text>
+              </View>
+            ))}
+          </ScrollView>
         ) : (
           <Text style={{ color: '#999', textAlign: 'center', paddingVertical: 8 }}>No data available</Text>
         )}
@@ -398,7 +400,7 @@ export default function Dashboard({ navigation }) {
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('Contacts'); }}>
-              <Text style={styles.menuText}>Potential Partners</Text>
+              <Text style={styles.menuText}>Contacts</Text>
             </TouchableOpacity>
             <View style={styles.divider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { closeMenu(); navigation.navigate('RevenueList'); }}>
@@ -442,6 +444,7 @@ const styles = StyleSheet.create({
   partner: { color: '#333' },
   partnerAmount: { color: '#111', fontWeight: '700' },
   phone: { color: '#666' },
+  recentPartnersScroll: { maxHeight: verticalScale(200) },
   pillsRow: { marginTop: verticalScale(6) },
   pill: { backgroundColor: '#fdeaea', borderRadius: moderateScale(10), padding: moderateScale(8), marginVertical: verticalScale(6), flexDirection: 'row', justifyContent: 'space-between' },
   pillNumber: { fontWeight: '700' },

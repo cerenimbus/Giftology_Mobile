@@ -3,8 +3,9 @@
  * Revenue list screen displaying all revenue records retrieved from GetRevenueList API.
  * Purpose: Display contact revenue in a scrollable table format with contact name, amount, and date.
  */
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator, Dimensions } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { GetRevenueList } from '../api';
 import { log, getMaskAC } from '../utils/debug';
 
@@ -36,46 +37,48 @@ export default function Revenue_List({ navigation }) {
   const [revenues, setRevenues] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    let mounted = true;
-    
-    async function loadRevenues() {
-      setLoading(true);
-      try {
-        // OBP 03/01/26 Call GetRevenueList API to retrieve revenue records for user's contacts
-        const res = await GetRevenueList();
-        if (!mounted) return;
-        
-        log('Revenue_List: GetRevenueList response', res);
-        if (res?.requestUrl) {
-          try {
-            const maskAC = getMaskAC && getMaskAC();
-            if (maskAC) {
-              log('Revenue_List: GetRevenueList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***')); 
-              log('Revenue_List: GetRevenueList URL (full):', res.requestUrl);
-            } else {
-              log('Revenue_List: GetRevenueList URL (AC visible):', res.requestUrl);
-            }
-          } catch (e) {}
+  useFocusEffect(
+    useCallback(() => {
+      let mounted = true;
+
+      async function loadRevenues() {
+        setLoading(true);
+        try {
+          // OBP 03/01/26 Call GetRevenueList API to retrieve revenue records for user's contacts
+          const res = await GetRevenueList();
+          if (!mounted) return;
+
+          log('Revenue_List: GetRevenueList response', res);
+          if (res?.requestUrl) {
+            try {
+              const maskAC = getMaskAC && getMaskAC();
+              if (maskAC) {
+                log('Revenue_List: GetRevenueList URL (masked):', res.requestUrl.replace(/([&?]AC=)[^&]*/,'$1***'));
+                log('Revenue_List: GetRevenueList URL (full):', res.requestUrl);
+              } else {
+                log('Revenue_List: GetRevenueList URL (AC visible):', res.requestUrl);
+              }
+            } catch (e) {}
+          }
+
+          if (res?.success) {
+            setRevenues(res.revenues || []);
+          } else {
+            log('Revenue_List: GetRevenueList failed', res);
+          }
+        } catch (e) {
+          log('Revenue_List: GetRevenueList exception', e && e.stack ? e.stack : e);
+        } finally {
+          setLoading(false);
         }
-        
-        if (res?.success) {
-          setRevenues(res.revenues || []);
-        } else {
-          log('Revenue_List: GetRevenueList failed', res);
-        }
-      } catch (e) {
-        log('Revenue_List: GetRevenueList exception', e && e.stack ? e.stack : e);
-      } finally {
-        setLoading(false);
       }
-    }
-    
-    loadRevenues();
-    return () => {
-      mounted = false;
-    };
-  }, []);
+
+      loadRevenues();
+      return () => {
+        mounted = false;
+      };
+    }, [])
+  );
 
   // OBP 03/01/26 Navigate to Revenue_Entry screen for adding new revenue
   const onAddRevenue = () => {

@@ -374,37 +374,44 @@ export async function GetDashboard() {
   const partner = sel?.Partner ?? findValue(sel, 'Partner');
   const dovElements = sel?.DOV ?? findValue(sel, 'DOV');
   
-  // Extract chart data arrays
-  let dovChartData = [];
-  if (dovElements) {
+  // Helper to extract DataPoint arrays from graph elements (DOVGraph/RevenueGraph)
+  const extractDataPoints = (graphElement) => {
+    if (!graphElement) return [];
+    const points = graphElement?.DataPoint;
+    if (!points) return [];
+    const arr = Array.isArray(points) ? points : [points];
+    return arr.map(dp => {
+      const val = dp?.Value ?? dp?.value ?? 0;
+      return typeof val === 'number' ? val : Number(val) || 0;
+    });
+  };
+
+  // Extract chart data arrays from DOVGraph > DataPoint > Value
+  const dovGraphElement = sel?.DOVGraph ?? findValue(sel, 'DOVGraph');
+  let dovChartData = extractDataPoints(dovGraphElement);
+  // Fallback to legacy formats
+  if (!dovChartData.length && dovElements) {
     const dovArray = Array.isArray(dovElements) ? dovElements : [dovElements];
     dovChartData = dovArray.map(dov => {
       const count = dov?.Count || dov?.count || 0;
       return typeof count === 'number' ? count : Number(count) || 0;
     });
-  } else if (sel?.DOVChart) {
-    const dovChart = Array.isArray(sel.DOVChart) ? sel.DOVChart : [sel.DOVChart];
-    dovChartData = dovChart.map(item => {
-      const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
-      return typeof val === 'number' ? val : Number(val) || 0;
-    });
-  } else if (sel?.dovChartData) {
-    const arr = Array.isArray(sel.dovChartData) ? sel.dovChartData : [sel.dovChartData];
-    dovChartData = arr.map(v => typeof v === 'number' ? v : Number(v) || 0);
   }
-  
-  // Revenue Chart: expects array of numbers from RevenueChart or revenueChartData
-  let revenueChartData = [];
-  if (sel?.RevenueChart) {
+
+  // Revenue Chart from RevenueGraph > DataPoint > Value
+  const revenueGraphElement = sel?.RevenueGraph ?? findValue(sel, 'RevenueGraph');
+  let revenueChartData = extractDataPoints(revenueGraphElement);
+  // Fallback to legacy formats
+  if (!revenueChartData.length && sel?.RevenueChart) {
     const revChart = Array.isArray(sel.RevenueChart) ? sel.RevenueChart : [sel.RevenueChart];
     revenueChartData = revChart.map(item => {
       const val = typeof item === 'object' ? (item.Count || item.count || item) : item;
       return typeof val === 'number' ? val : Number(val) || 0;
     });
-  } else if (sel?.revenueChartData) {
-    const arr = Array.isArray(sel.revenueChartData) ? sel.revenueChartData : [sel.revenueChartData];
-    revenueChartData = arr.map(v => typeof v === 'number' ? v : Number(v) || 0);
   }
+
+  // Extract TotalRevenue
+  const totalRevenue = sel?.TotalRevenue ?? findValue(sel, 'TotalRevenue');
   
   // Map a compact JS object expected by UI
   const data = {
@@ -421,6 +428,7 @@ export async function GetDashboard() {
     },
     dovChartData: dovChartData.length > 0 ? dovChartData : null,
     revenueChartData: revenueChartData.length > 0 ? revenueChartData : null,
+    revenueAmount: totalRevenue != null ? String(totalRevenue) : null,
   };
   
   return { success: true, data };
@@ -486,11 +494,11 @@ export async function UpdateTask({ Task, Status }) {
 export async function GetContactList() {
   const r = await callService('GetContactList', { Language: 'EN', MobileVersion: 1 }, null, { includeAcInKey: true });
   if (!r.success) return r;
-  const contactsData = r.parsed?.Contacts || {};
+  const contactsData = r.parsed?.Selections || r.parsed?.Contacts || {};
   let contacts = [];
   if (contactsData?.Contact) {
     const as = Array.isArray(contactsData.Contact) ? contactsData.Contact : [contactsData.Contact];
-    contacts = as.map(c => ({ id: String(c?.Serial || ''), name: c?.Name || '', status: c?.Status || '', phone: c?.Phone || '' }));
+    contacts = as.map(c => ({ id: String(c?.Serial || ''), name: c?.Name || '', status: c?.Status || '', phone: c?.Phone || '', introduction: c?.Introduction || '', referral: c?.Referral || '' }));
   }
   return { success: true, contacts };
 }
@@ -518,7 +526,7 @@ export async function UpdateFeedback({ Name, Email, Phone, Response, Update, Com
 
 // OBP 03/01/26 - Get revenue list for user's contacts
 export async function GetRevenueList() {
-  const r = await callService('GetRevenueList');
+  const r = await callService('GetRevenueList', { Language: 'EN', MobileVersion: '1.0.10' }, null, { includeAcInKey: true });
   if (!r.success) return r;
   
   const selections = r.parsed?.Selections || {};
@@ -544,13 +552,15 @@ export async function GetRevenueList() {
 // RevenueDate: date in format MM/DD/YYYY
 // Amount: integer or decimal value
 export async function UpdateRevenue({ Action, Revenue, Contact, RevenueDate, Amount }) {
-  return callService('UpdateRevenue', { 
-    Action, 
-    Revenue, 
-    Contact, 
-    RevenueDate, 
-    Amount 
-  });
+  return callService('UpdateRevenue', {
+    Action,
+    Revenue,
+    Contact,
+    RevenueDate,
+    Amount,
+    Language: 'EN',
+    MobileVersion: '1.0.10',
+  }, null, { includeAcInKey: true });
 }
 
 // RHCM 11/21/25 - fetch wrapper with timeout support.
